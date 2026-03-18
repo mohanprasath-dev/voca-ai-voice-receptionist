@@ -1,46 +1,22 @@
-import { headers } from 'next/headers';
-import { getAppConfig } from '@/lib/utils';
+'use client';
+
+import { usePathname } from 'next/navigation';
+import { Footer } from '@/components/ui/footer';
+import { Navbar } from '@/components/ui/navbar';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-export default async function Layout({ children }: LayoutProps) {
-  const hdrs = await headers();
-  const { companyName, logo, logoDark } = await getAppConfig(hdrs);
+export default function Layout({ children }: LayoutProps) {
+  const pathname = usePathname();
+  const isDemo = pathname?.startsWith('/demo');
 
   return (
-    <>
-      <header className="fixed top-0 left-0 z-50 hidden w-full flex-row justify-between p-6 md:flex">
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://livekit.io"
-          className="scale-100 transition-transform duration-300 hover:scale-110"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logo} alt={`${companyName} Logo`} className="block size-6 dark:hidden" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoDark ?? logo}
-            alt={`${companyName} Logo`}
-            className="hidden size-6 dark:block"
-          />
-        </a>
-        <span className="text-foreground font-mono text-xs font-bold tracking-wider uppercase">
-          Built with{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents"
-            className="underline underline-offset-4"
-          >
-            LiveKit Agents
-          </a>
-        </span>
-      </header>
-
-      {children}
-    </>
+    <div className="bg-background text-foreground flex min-h-screen flex-col">
+      <Navbar />
+      <main className="flex flex-1 flex-col">{children}</main>
+      {!isDemo && <Footer />}
+    </div>
   );
 }

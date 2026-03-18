@@ -1,199 +1,142 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRoomContext } from '@livekit/components-react';
-import { RoomEvent } from 'livekit-client';
-import { motion } from 'motion/react';
 import type { AppConfig } from '@/app-config';
-import { ChatTranscript } from '@/components/app/chat-transcript';
-import { BudgetIndicator } from '@/components/app/budget-indicator';
-import { DemoScenarioPanel } from '@/components/app/demo-scenario-panel';
-import { InterruptHint } from '@/components/app/interrupt-hint';
-import { LatencyDebugPanel } from '@/components/app/latency-debug-panel';
-import { LiveMetricsPanel } from '@/components/app/live-metrics-panel';
-import { PreConnectMessage } from '@/components/app/preconnect-message';
-import { TileLayout } from '@/components/app/tile-layout';
+import { ConnectionIndicator } from '@/components/app/connection-indicator';
+import { TranscriptView } from '@/components/app/transcript-view';
+import { VoiceControlBar } from '@/components/app/voice-control-bar';
 import { VoiceStatusPill } from '@/components/app/voice-status-pill';
-import {
-  AgentControlBar,
-  type ControlBarControls,
-} from '@/components/livekit/agent-control-bar/agent-control-bar';
+import { Container } from '@/components/ui/container';
 import { useChatMessages } from '@/hooks/useChatMessages';
-import { useConnectionHealth } from '@/hooks/useConnectionHealth';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
-import { useDebugMode } from '@/hooks/useDebug';
-import { useLiveMetrics } from '@/hooks/useLiveMetrics';
 import { useVoiceSessionState } from '@/hooks/useVoiceSessionState';
-import { cn } from '@/lib/utils';
-import { ScrollArea } from '../livekit/scroll-area/scroll-area';
 
-const MotionBottom = motion.create('div');
-
-const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
-const BOTTOM_VIEW_MOTION_PROPS = {
-  variants: {
-    visible: {
-      opacity: 1,
-      translateY: '0%',
-    },
-    hidden: {
-      opacity: 0,
-      translateY: '100%',
-    },
-  },
-  initial: 'hidden',
-  animate: 'visible',
-  exit: 'hidden',
-  transition: {
-    duration: 0.3,
-    delay: 0.5,
-    ease: 'easeOut',
-  },
-};
-
-interface FadeProps {
-  top?: boolean;
-  bottom?: boolean;
-  className?: string;
-}
-
-export function Fade({ top = false, bottom = false, className }: FadeProps) {
-  return (
-    <div
-      className={cn(
-        'from-background pointer-events-none h-4 bg-linear-to-b to-transparent',
-        top && 'bg-linear-to-b',
-        bottom && 'bg-linear-to-t',
-        className
-      )}
-    />
-  );
-}
 interface SessionViewProps {
   appConfig: AppConfig;
+  onAnimationComplete?: () => void;
 }
 
 export const SessionView = ({
   appConfig,
+  onAnimationComplete,
   ...props
 }: React.ComponentProps<'section'> & SessionViewProps) => {
   useConnectionTimeout(200_000);
-  useDebugMode({ enabled: IN_DEVELOPMENT });
 
+  const [chatOpen, setChatOpen] = useState(false);
   const messages = useChatMessages();
   const { phase } = useVoiceSessionState();
-  const metrics = useLiveMetrics();
-  const { connectionHealth } = useConnectionHealth();
   const room = useRoomContext();
-  const [chatOpen, setChatOpen] = useState(false);
-  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Ingest queue position from room session data
+  // Auto-scroll transcript with smooth behavior
   useEffect(() => {
-    function onDataReceived(
-      payload: Uint8Array,
-      _participant?: unknown,
-      _kind?: unknown,
-      topic?: string
-    ) {
-      if (topic !== 'voca.session') {
-        return;
-      }
-      try {
-        const text = new TextDecoder().decode(payload);
-        const data = JSON.parse(text) as { queue_position?: number };
-        if (typeof data.queue_position === 'number') {
-          setQueuePosition(data.queue_position);
-        }
-      } catch {
-        // Ignore invalid payloads.
-      }
-    }
-    
-    room.on(RoomEvent.DataReceived, onDataReceived);
-    return () => {
-      room.off(RoomEvent.DataReceived, onDataReceived);
-    };
-  }, [room]);
-
-  const budgetSnapshot = {
-    sttSecondsUsed: 0,
-    ttsSecondsUsed: 0,
-    charUsed: 0,
-    activeSessions: 1,
-    mode: (metrics.budgetMode ?? 'normal') as 'normal' | 'near_limit' | 'hard_limit',
-    budgetUsagePercentage: metrics.budgetUsagePercentage,
-  };
-
-  const controls: ControlBarControls = {
-    leave: true,
-    microphone: true,
-    chat: appConfig.supportsChatInput,
-    camera: appConfig.supportsVideoInput,
-    screenShare: appConfig.supportsVideoInput,
-  };
-
-  useEffect(() => {
-    const lastMessage = messages.at(-1);
-    const lastMessageIsLocal = lastMessage?.from?.isLocal === true;
-
-    if (scrollAreaRef.current && lastMessageIsLocal) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   }, [messages]);
 
   return (
-    <section className="bg-background relative z-10 h-full w-full overflow-hidden" {...props}>
-      {/* Chat Transcript */}
-      <div
-        className={cn(
-          'fixed inset-0 grid grid-cols-1 grid-rows-1',
-          !chatOpen && 'pointer-events-none'
-        )}
-      >
-        <Fade top className="absolute inset-x-4 top-0 h-40" />
-        <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-37.5 md:px-6 md:pb-45">
-          <ChatTranscript
-            hidden={!chatOpen}
-            messages={messages}
-            className="mx-auto max-w-2xl space-y-3 transition-opacity duration-300 ease-out"
-          />
-        </ScrollArea>
+    <section
+      className="bg-background relative flex h-full w-full flex-col overflow-hidden"
+      {...props}
+    >
+      {/* Dynamic Background */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <motion.div
+          animate={{
+            scale: phase === 'speaking' ? 1.2 : 1,
+            opacity: phase === 'listening' ? 0.4 : 0.2,
+          }}
+          transition={{ duration: 2, ease: 'easeInOut' }}
+          className="bg-primary/20 absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]"
+        />
+        <div className="bg-secondary/5 absolute top-0 right-0 h-[400px] w-[400px] rounded-full blur-[100px]" />
       </div>
 
-      {/* Tile Layout */}
-      <TileLayout chatOpen={chatOpen} />
-
-      <div className="pointer-events-none fixed top-4 left-4 z-50 flex flex-col gap-2 md:top-8 md:left-8">
-        <VoiceStatusPill phase={phase} />
-        <BudgetIndicator budget={budgetSnapshot} />
-        {queuePosition !== null && queuePosition > 0 && (
-          <div className="bg-background/90 border-input/60 rounded-md border px-3 py-2 text-xs shadow-sm">
-            <div className="font-medium text-amber-700">Queue: #{queuePosition}</div>
-          </div>
-        )}
-        <LiveMetricsPanel metrics={metrics} />
-        <LatencyDebugPanel latencyMs={metrics.avgResponseLatencyMs} connectionHealth={connectionHealth} />
-        <DemoScenarioPanel />
-      </div>
-
-      {/* Bottom */}
-      <MotionBottom
-        {...BOTTOM_VIEW_MOTION_PROPS}
-        className="fixed inset-x-3 bottom-0 z-50 md:inset-x-12"
-      >
-        {appConfig.isPreConnectBufferEnabled && (
-          <PreConnectMessage messages={messages} className="pb-4" />
-        )}
-        <div className="bg-background relative mx-auto max-w-2xl pb-3 md:pb-12">
-          <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
-          <div className="px-2 pb-2">
-            <InterruptHint phase={phase} />
-          </div>
-          <AgentControlBar controls={controls} onChatOpenChange={setChatOpen} />
+      <Container className="relative z-10 flex h-full max-w-4xl flex-col items-center justify-between py-6">
+        {/* Top Header */}
+        <div className="flex w-full items-center justify-between pb-4">
+          <ConnectionIndicator state={room.state} />
+          <VoiceStatusPill phase={phase} />
         </div>
-      </MotionBottom>
+
+        {/* Experience Zone */}
+        <div className="flex w-full flex-1 flex-col items-center justify-center overflow-hidden">
+          {/* Visual Orb */}
+          <div className="relative mb-8 flex items-center justify-center md:mb-12">
+            <motion.div
+              animate={{
+                scale: phase === 'speaking' ? [1, 1.2, 1] : 1,
+                opacity: phase === 'listening' ? [0.4, 0.7, 0.4] : 0.5,
+              }}
+              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+              className="bg-primary/30 absolute size-48 rounded-full blur-3xl md:size-64"
+            />
+
+            <div className="bg-foreground relative flex size-32 items-center justify-center rounded-full shadow-[0_0_60px_rgba(255,255,255,0.15)] md:size-40">
+              <div className="bg-background flex size-16 items-center justify-center rounded-full md:size-20">
+                <div className="flex h-10 items-end gap-1.5">
+                  <motion.div
+                    animate={{ height: phase === 'speaking' ? [4, 30, 15, 40, 4] : 4 }}
+                    transition={{ repeat: Infinity, duration: 0.8 }}
+                    className="bg-foreground w-1.5 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ height: phase === 'speaking' ? [8, 40, 20, 50, 8] : 8 }}
+                    transition={{ repeat: Infinity, duration: 1.1 }}
+                    className="bg-foreground w-1.5 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ height: phase === 'speaking' ? [4, 25, 12, 35, 4] : 4 }}
+                    transition={{ repeat: Infinity, duration: 0.9 }}
+                    className="bg-foreground w-1.5 rounded-full"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {messages.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="text-center"
+              >
+                <h2 className="text-foreground/80 text-2xl font-medium">
+                  How can I help you today?
+                </h2>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {chatOpen && (
+              <motion.div
+                ref={scrollAreaRef}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="w-full flex-1 overflow-y-auto scroll-smooth p-4"
+              >
+                <TranscriptView messages={messages} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom Control Bar */}
+        <div className="w-full pt-4">
+          <VoiceControlBar isChatOpen={chatOpen} onChatOpenChange={setChatOpen} />
+        </div>
+      </Container>
     </section>
   );
 };

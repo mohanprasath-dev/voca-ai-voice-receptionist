@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Room, RoomEvent, TokenSource } from 'livekit-client';
 import { AppConfig } from '@/app-config';
-import { toastAlert } from '@/components/livekit/alert-toast';
 
 export interface RoomHookState {
   room: Room;
   isSessionActive: boolean;
   queuePosition: number | null;
   restoredAfterDisconnect: boolean;
+  startSession: () => void;
+  endSession: () => void;
 }
 
 export function useRoom(appConfig: AppConfig): RoomHookState {
@@ -53,10 +54,7 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
     }
 
     function onMediaDevicesError(error: Error) {
-      toastAlert({
-        title: 'Encountered an error with your media devices',
-        description: `${error.name}: ${error.message}`,
-      });
+      console.error('Encountered an error with your media devices:', error);
     }
 
     room.on(RoomEvent.Disconnected, onDisconnected);
@@ -135,10 +133,7 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
           return;
         }
 
-        toastAlert({
-          title: 'There was an error connecting to the agent',
-          description: `${error.name}: ${error.message}`,
-        });
+        console.error('There was an error connecting to the agent:', error);
       });
     }
   }, [room, appConfig, tokenSource]);

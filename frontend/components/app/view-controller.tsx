@@ -24,44 +24,33 @@ const VIEW_MOTION_PROPS = {
   exit: 'hidden',
   transition: {
     duration: 0.5,
-    ease: 'linear',
+    ease: 'linear' as const,
   },
-};
+} as const;
 
 export function ViewController() {
   const room = useRoomContext();
-  const isSessionActiveRef = useRef(false);
   const { appConfig, isSessionActive, startSession } = useSession();
 
-  // animation handler holds a reference to stale isSessionActive value
-  isSessionActiveRef.current = isSessionActive;
-
-  // disconnect room after animation completes
   const handleAnimationComplete = () => {
-    if (!isSessionActiveRef.current && room.state !== 'disconnected') {
+    if (!isSessionActive && room.state !== 'disconnected') {
       room.disconnect();
     }
   };
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="wait" onExitComplete={handleAnimationComplete}>
       {/* Welcome screen */}
       {!isSessionActive && (
-        <MotionWelcomeView
-          key="welcome"
-          {...VIEW_MOTION_PROPS}
-          startButtonText={appConfig.startButtonText}
-          onStartCall={startSession}
-        />
+        <motion.div key="welcome" {...VIEW_MOTION_PROPS}>
+          <WelcomeView startButtonText={appConfig.startButtonText} onStartCall={startSession} />
+        </motion.div>
       )}
       {/* Session view */}
       {isSessionActive && (
-        <MotionSessionView
-          key="session-view"
-          {...VIEW_MOTION_PROPS}
-          appConfig={appConfig}
-          onAnimationComplete={handleAnimationComplete}
-        />
+        <motion.div key="session-view" {...VIEW_MOTION_PROPS}>
+          <SessionView appConfig={appConfig} />
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -65,8 +65,9 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body className="overflow-x-hidden">
         {children}
-        <div className="group fixed bottom-0 left-1/2 z-50 mb-2 -translate-x-1/2">
-          <ThemeToggle className="translate-y-20 transition-transform delay-150 duration-300 group-hover:translate-y-0" />
+        <div className="group fixed top-24 right-4 z-[200]">
+          <ThemeToggle className="transition-all duration-300 md:translate-x-12 md:opacity-0 md:group-hover:translate-x-0 md:group-hover:opacity-100" />
+          <div className="absolute top-0 right-0 hidden h-10 w-2 cursor-pointer rounded-full border border-white/10 bg-white/5 backdrop-blur-sm md:block" />
         </div>
       </body>
     </html>
