@@ -17,7 +17,6 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     metrics,
-    tokenize,
     UserInputTranscribedEvent,
     SpeechCreatedEvent,
     UserStateChangedEvent,
@@ -35,6 +34,7 @@ from voca.prompts.system_prompt import VOCA_SYSTEM_PROMPT
 from voca.services.budget_manager import BudgetManager
 from voca.services.telemetry import Telemetry
 from voca.services.fallbacks import FallbackService
+from voca.services.humanized_tts import HumanizedTTSStreamer
 from voca.config import DEFAULT_CONFIG
 
 logger = logging.getLogger("agent")
@@ -135,6 +135,14 @@ async def entrypoint(ctx: JobContext):
         "room": ctx.room.name,
     }
 
+    murf_tts = murf.TTS(
+        voice="en-US-matthew",
+        style="Conversational",
+        speed=-8,
+        pitch=0,
+        text_pacing=True,
+    )
+
     # Set up a voice AI pipeline using OpenAI, Cartesia, AssemblyAI, and the LiveKit turn detector
     session = AgentSession(
         # Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
@@ -147,12 +155,7 @@ async def entrypoint(ctx: JobContext):
             ),
         # Text-to-speech (TTS) is your agent's voice, turning the LLM's text into speech that the user can hear
         # See all available models as well as voice selections at https://docs.livekit.io/agents/models/tts/
-        tts=murf.TTS(
-                voice="en-US-matthew", 
-                style="Conversation",
-                tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
-                text_pacing=True
-            ),
+        tts=murf_tts,
         # VAD and turn detection are used to determine when the user is speaking and when the agent should respond
         # See more at https://docs.livekit.io/agents/build/turns
         turn_detection=MultilingualModel(),
@@ -188,6 +191,7 @@ async def entrypoint(ctx: JobContext):
     latest_speech_handle = None
     keepalive_task: Optional[asyncio.Task[None]] = None
     last_turn_activity_ms = int(time.time() * 1000)
+    humanized_tts = HumanizedTTSStreamer(session=session, murf_tts=murf_tts)
 
     def _publish_data(topic: str, payload: dict[str, Any]) -> None:
         try:
@@ -282,6 +286,7 @@ async def entrypoint(ctx: JobContext):
         nonlocal is_agent_speaking
         if ev.new_state == "speaking" and is_agent_speaking and latest_speech_handle is not None:
             try:
+                humanized_tts.interrupt_current()
                 latest_speech_handle.interrupt(force=True)
                 is_agent_speaking = False
                 logger.info("Interrupted active speech due to user barge-in")
@@ -366,7 +371,7 @@ async def entrypoint(ctx: JobContext):
                     _publish_phase("speaking", intent="filler")
                     _publish_chat("agent", filler)
                     try:
-                        await session.say(filler, allow_interruptions=True)
+                        await humanized_tts.say(filler, allow_interruptions=True)
                     except Exception as err:
                         logger.debug("Filler TTS failed", extra={"error": str(err)})
 
@@ -414,7 +419,7 @@ async def entrypoint(ctx: JobContext):
                 _publish_phase("speaking", intent=output["intent"])
                 _publish_chat("agent", speech_text)
                 logger.info("TTS started", extra={"session_id": runtime_session_id, "chars": len(speech_text)})
-                await session.say(speech_text, allow_interruptions=True)
+                await humanized_tts.say(speech_text, allow_interruptions=True)
                 is_agent_speaking = False
                 _publish_phase("listening", intent=output["intent"])
             except Exception as err:
@@ -423,7 +428,7 @@ async def entrypoint(ctx: JobContext):
                 _publish_phase("speaking", intent="error")
                 try:
                     _publish_chat("agent", "Sorry—something went wrong. Please try again.")
-                    await session.say("Sorry—something went wrong. Please try again.", allow_interruptions=True)
+                    await humanized_tts.say("Sorry—something went wrong. Please try again.", allow_interruptions=True)
                 except Exception:
                     pass
                 _publish_phase("listening", intent="error")
@@ -452,7 +457,7 @@ async def entrypoint(ctx: JobContext):
             logger.info("Keepalive prompt", extra={"session_id": runtime_session_id, "prompt": prompt})
             _publish_phase("speaking", intent="keepalive")
             try:
-                await session.say(prompt, allow_interruptions=True)
+                await humanized_tts.say(prompt, allow_interruptions=True)
             except Exception as err:
                 logger.debug("Keepalive TTS failed", extra={"error": str(err)})
             _publish_phase("listening", intent="keepalive")
