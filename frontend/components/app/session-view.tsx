@@ -84,13 +84,13 @@ export const SessionView = ({
   const { phase } = useVoiceSessionState();
   const metrics = useLiveMetrics();
   const { connectionHealth } = useConnectionHealth();
+  const room = useRoomContext();
   const [chatOpen, setChatOpen] = useState(false);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Ingest queue position from room session data
   useEffect(() => {
-    const room = room; // From LiveKit context
     function onDataReceived(
       payload: Uint8Array,
       _participant?: unknown,
@@ -110,8 +110,12 @@ export const SessionView = ({
         // Ignore invalid payloads.
       }
     }
-    // Note: This is already handled by useRoom hook, but session-view can access via context
-  }, []);
+    
+    room.on(RoomEvent.DataReceived, onDataReceived);
+    return () => {
+      room.off(RoomEvent.DataReceived, onDataReceived);
+    };
+  }, [room]);
 
   const budgetSnapshot = {
     sttSecondsUsed: 0,

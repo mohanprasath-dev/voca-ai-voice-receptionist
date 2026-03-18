@@ -226,6 +226,7 @@ async def entrypoint(ctx: JobContext):
                 (budget_manager.usage().char_used / 100000) * 100,
             )
         )
+        telemetry.set_budget_mode(budget_manager.current_mode())
         _publish_data("voca.metrics", telemetry.snapshot())
 
     @session.on("speech_created")
