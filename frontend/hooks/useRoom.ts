@@ -21,10 +21,12 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
   useEffect(() => {
     function onDisconnected() {
       setIsSessionActive(false);
+      console.debug('[voca] room disconnected');
     }
 
     function onConnected() {
       setRestoredAfterDisconnect(true);
+      console.debug('[voca] room connected');
     }
 
     function onDataReceived(
@@ -41,7 +43,10 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
         const data = JSON.parse(text) as {
           queue_position?: number;
           restored_after_disconnect?: boolean;
+          phase?: string;
+          intent?: string;
         };
+        console.debug('[voca] session event', data);
         if (typeof data.queue_position === 'number') {
           setQueuePosition(data.queue_position);
         }
@@ -135,6 +140,7 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
 
         console.error('There was an error connecting to the agent:', error);
       });
+      console.debug('[voca] startSession: mic enable + connect triggered');
     }
   }, [room, appConfig, tokenSource]);
 

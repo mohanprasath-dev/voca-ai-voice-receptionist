@@ -8,11 +8,15 @@ import { useRoom } from '@/hooks/useRoom';
 const SessionContext = createContext<{
   appConfig: AppConfig;
   isSessionActive: boolean;
+  queuePosition: number | null;
+  restoredAfterDisconnect: boolean;
   startSession: () => void;
   endSession: () => void;
 }>({
   appConfig: APP_CONFIG_DEFAULTS,
   isSessionActive: false,
+  queuePosition: null,
+  restoredAfterDisconnect: false,
   startSession: () => {},
   endSession: () => {},
 });
@@ -23,10 +27,11 @@ interface SessionProviderProps {
 }
 
 export const SessionProvider = ({ appConfig, children }: SessionProviderProps) => {
-  const { room, isSessionActive, startSession, endSession } = useRoom(appConfig);
+  const { room, isSessionActive, startSession, endSession, queuePosition, restoredAfterDisconnect } =
+    useRoom(appConfig);
   const contextValue = useMemo(
-    () => ({ appConfig, isSessionActive, startSession, endSession }),
-    [appConfig, isSessionActive, startSession, endSession]
+    () => ({ appConfig, isSessionActive, startSession, endSession, queuePosition, restoredAfterDisconnect }),
+    [appConfig, isSessionActive, startSession, endSession, queuePosition, restoredAfterDisconnect]
   );
 
   return (

@@ -28,6 +28,10 @@ class BudgetManager:
     def current_mode(self) -> str:
         return self._usage.mode
 
+    def is_blocked(self) -> bool:
+        """Hard stop when budget is exhausted."""
+        return self._usage.mode == BudgetMode.HARD_LIMIT.value
+
     def _update_mode(self) -> None:
         stt_ratio = self._usage.stt_seconds_used / self._config.stt_max_seconds
         tts_ratio = self._usage.tts_seconds_used / self._config.tts_max_seconds

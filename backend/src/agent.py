@@ -1,6 +1,7 @@
 import logging
 import json
 import time
+import asyncio
 from typing import Any, Optional, Tuple
 from uuid import uuid4
 
@@ -33,6 +34,8 @@ from voca.orchestration.turn_manager import TurnManager
 from voca.prompts.system_prompt import VOCA_SYSTEM_PROMPT
 from voca.services.budget_manager import BudgetManager
 from voca.services.telemetry import Telemetry
+from voca.services.fallbacks import FallbackService
+from voca.config import DEFAULT_CONFIG
 
 logger = logging.getLogger("agent")
 
@@ -162,8 +165,9 @@ async def entrypoint(ctx: JobContext):
     context_memory = ContextMemory()
     experience_controller = ExperienceController()
     turn_manager = TurnManager()
-    budget_manager = BudgetManager()
+    budget_manager = BudgetManager(DEFAULT_CONFIG)
     telemetry = Telemetry()
+    fallback_service = FallbackService()
     session_orchestrator = SessionOrchestrator(
         memory=context_memory,
         experience=experience_controller,
@@ -182,6 +186,8 @@ async def entrypoint(ctx: JobContext):
     runtime_session_id = f"{ctx.room.name}-{uuid4().hex[:8]}"
     is_agent_speaking = False
     latest_speech_handle = None
+    keepalive_task: Optional[asyncio.Task[None]] = None
+    last_turn_activity_ms = int(time.time() * 1000)
 
     def _publish_data(topic: str, payload: dict[str, Any]) -> None:
         try:
@@ -191,6 +197,29 @@ async def entrypoint(ctx: JobContext):
             participant.publish_data(payload=json.dumps(payload), topic=topic, reliable=True)
         except Exception as publish_error:
             logger.debug("Failed to publish data message", extra={"topic": topic, "error": str(publish_error)})
+
+    def _publish_phase(phase: str, intent: Optional[str] = None, **extra: Any) -> None:
+        payload: dict[str, Any] = {
+            "session_id": runtime_session_id,
+            "phase": phase,
+            "intent": intent,
+            "timestamp_ms": int(time.time() * 1000),
+        }
+        payload.update({k: v for k, v in extra.items() if v is not None})
+        _publish_data("voca.session", payload)
+
+    def _publish_chat(role: str, message: str) -> None:
+        if not message:
+            return
+        _publish_data(
+            "voca.chat",
+            {
+                "id": uuid4().hex,
+                "role": role,
+                "message": message,
+                "timestamp_ms": int(time.time() * 1000),
+            },
+        )
 
     # To use a realtime model instead of a voice pipeline, use the following session setup instead.
     # (Note: This is for the OpenAI Realtime API. For other providers, see https://docs.livekit.io/agents/models/realtime/))
@@ -221,13 +250,22 @@ async def entrypoint(ctx: JobContext):
         budget_manager.record_characters(int(llm_chars))
         telemetry.set_budget_usage_percentage(
             max(
-                (budget_manager.usage().stt_seconds_used / 600) * 100,
-                (budget_manager.usage().tts_seconds_used / 600) * 100,
-                (budget_manager.usage().char_used / 100000) * 100,
+                (budget_manager.usage().stt_seconds_used / DEFAULT_CONFIG.stt_max_seconds) * 100,
+                (budget_manager.usage().tts_seconds_used / DEFAULT_CONFIG.tts_max_seconds) * 100,
+                (budget_manager.usage().char_used / DEFAULT_CONFIG.api_char_budget) * 100,
             )
         )
         telemetry.set_budget_mode(budget_manager.current_mode())
         _publish_data("voca.metrics", telemetry.snapshot())
+        logger.debug(
+            "Metrics updated",
+            extra={
+                "stt_seconds": stt_seconds,
+                "tts_seconds": tts_seconds,
+                "llm_chars": llm_chars,
+                "budget_mode": budget_manager.current_mode(),
+            },
+        )
 
     @session.on("speech_created")
     def _on_speech_created(ev: SpeechCreatedEvent) -> None:
@@ -247,18 +285,24 @@ async def entrypoint(ctx: JobContext):
                 latest_speech_handle.interrupt(force=True)
                 is_agent_speaking = False
                 logger.info("Interrupted active speech due to user barge-in")
+                _publish_phase("listening", intent="interrupt")
             except Exception as interruption_error:
                 logger.debug("Speech interruption failed", extra={"error": str(interruption_error)})
 
     @session.on("user_input_transcribed")
     def _handle_transcript_event(ev: UserInputTranscribedEvent) -> None:
         nonlocal is_agent_speaking
-        user_text = ev.transcript.strip()
+        nonlocal last_turn_activity_ms
+
+        user_text = (ev.transcript or "").strip()
         if not user_text:
             return
 
-        is_partial = not ev.is_final
-        partial_confidence = turn_manager._config.partial_stt_confidence_threshold if is_partial else None
+        last_turn_activity_ms = int(time.time() * 1000)
+
+        is_partial = not bool(getattr(ev, "is_final", True))
+        is_partial, extracted_confidence = _extract_partial_confidence(ev, partial=is_partial)
+        partial_confidence = extracted_confidence
 
         if turn_manager.should_interrupt(is_agent_speaking):
             if latest_speech_handle is not None:
@@ -277,32 +321,116 @@ async def entrypoint(ctx: JobContext):
             "partial_confidence": partial_confidence,
             "timestamp_ms": int(time.time() * 1000),
         }
-        started = time.perf_counter()
-        output = session_orchestrator.handle_turn(turn_input)
-        elapsed_ms = int((time.perf_counter() - started) * 1000)
-        telemetry.record_response_latency(elapsed_ms)
-        telemetry.record_intent_result(output["intent"] != "unknown")
-        is_agent_speaking = True
-
-        _publish_data(
-            "voca.session",
-            {
-                "queue_position": output.get("queue_position"),
-                "restored_after_disconnect": False,
-                "phase": output["telemetry_tags"].get("phase"),
-                "intent": output["intent"],
-            },
-        )
-
         logger.info(
-            "Orchestrated turn",
+            "Transcript received",
             extra={
                 "session_id": runtime_session_id,
-                "intent": output["intent"],
-                "route_action": output["route_action"],
-                "tone": output["tone"],
+                "partial": is_partial,
+                "confidence": partial_confidence,
+                "text": user_text,
             },
         )
+
+        if is_partial:
+            # Allow the turn manager to observe partials for early planning.
+            record_partial = getattr(turn_manager, "record_partial", None)
+            if callable(record_partial):
+                try:
+                    record_partial(turn_input)
+                except Exception as err:
+                    logger.debug("TurnManager.record_partial failed", extra={"error": str(err)})
+
+            # Only start the full pipeline on partials when early response is warranted.
+            if not turn_manager.should_start_early_response(True, partial_confidence):
+                _publish_phase("listening", intent="partial")
+                return
+
+        _publish_phase("thinking", intent="transcript")
+
+        async def _run_turn_pipeline() -> None:
+            nonlocal is_agent_speaking
+            response_started = asyncio.Event()
+
+            async def _dead_air_guard() -> None:
+                try:
+                    await asyncio.wait_for(
+                        response_started.wait(),
+                        timeout=DEFAULT_CONFIG.dead_air_threshold_ms / 1000,
+                    )
+                except asyncio.TimeoutError:
+                    filler = fallback_service.next_filler() if fallback_service else "Just a moment..."
+                    logger.info(
+                        "Dead-air filler emitted",
+                        extra={"session_id": runtime_session_id, "threshold_ms": DEFAULT_CONFIG.dead_air_threshold_ms},
+                    )
+                    _publish_phase("speaking", intent="filler")
+                    _publish_chat("agent", filler)
+                    try:
+                        await session.say(filler, allow_interruptions=True)
+                    except Exception as err:
+                        logger.debug("Filler TTS failed", extra={"error": str(err)})
+
+            guard_task = asyncio.create_task(_dead_air_guard())
+            started = time.perf_counter()
+
+            try:
+                logger.info("Orchestrator triggered", extra={"session_id": runtime_session_id})
+                output = await asyncio.to_thread(session_orchestrator.handle_turn, turn_input)
+                elapsed_ms = int((time.perf_counter() - started) * 1000)
+                telemetry.record_response_latency(elapsed_ms)
+                telemetry.record_intent_result(output["intent"] != "unknown")
+
+                response_started.set()
+                logger.info(
+                    "Response generated",
+                    extra={
+                        "session_id": runtime_session_id,
+                        "intent": output["intent"],
+                        "route_action": output["route_action"],
+                        "tone": output["tone"],
+                        "latency_ms": elapsed_ms,
+                    },
+                )
+
+                _publish_data(
+                    "voca.session",
+                    {
+                        "session_id": runtime_session_id,
+                        "queue_position": output.get("queue_position"),
+                        "restored_after_disconnect": False,
+                        "phase": output["telemetry_tags"].get("phase"),
+                        "intent": output["intent"],
+                        "dead_air_filler_used": output.get("dead_air_filler_used"),
+                        "early_response_started": output["telemetry_tags"].get("early_response_started"),
+                    },
+                )
+
+                speech_text = (output.get("speech_text") or "").strip()
+                if not speech_text:
+                    logger.error("No speech_text produced; emitting fallback", extra={"session_id": runtime_session_id})
+                    speech_text = "Just a moment..."
+
+                is_agent_speaking = True
+                _publish_phase("speaking", intent=output["intent"])
+                _publish_chat("agent", speech_text)
+                logger.info("TTS started", extra={"session_id": runtime_session_id, "chars": len(speech_text)})
+                await session.say(speech_text, allow_interruptions=True)
+                is_agent_speaking = False
+                _publish_phase("listening", intent=output["intent"])
+            except Exception as err:
+                response_started.set()
+                logger.exception("Turn pipeline failed", extra={"session_id": runtime_session_id, "error": str(err)})
+                _publish_phase("speaking", intent="error")
+                try:
+                    _publish_chat("agent", "Sorry—something went wrong. Please try again.")
+                    await session.say("Sorry—something went wrong. Please try again.", allow_interruptions=True)
+                except Exception:
+                    pass
+                _publish_phase("listening", intent="error")
+            finally:
+                guard_task.cancel()
+
+        asyncio.create_task(_run_turn_pipeline())
 
     async def log_usage():
         summary = usage_collector.get_summary()
@@ -311,22 +439,23 @@ async def entrypoint(ctx: JobContext):
 
     ctx.add_shutdown_callback(log_usage)
 
-    async def keepalive_probe() -> None:
-        now_ms = int(time.time() * 1000)
-        prompt = session_orchestrator.keepalive_prompt(runtime_session_id, now_ms)
-        if prompt:
+    async def keepalive_loop() -> None:
+        while True:
+            await asyncio.sleep(10)
+            now_ms = int(time.time() * 1000)
+            prompt = session_orchestrator.keepalive_prompt(runtime_session_id, now_ms)
+            if not prompt:
+                continue
+            # Only emit keepalive if there has been no activity recently (avoid spamming while talking).
+            if now_ms - last_turn_activity_ms < 30_000:
+                continue
             logger.info("Keepalive prompt", extra={"session_id": runtime_session_id, "prompt": prompt})
-            _publish_data(
-                "voca.session",
-                {
-                    "queue_position": None,
-                    "restored_after_disconnect": False,
-                    "phase": "listening",
-                    "intent": "keepalive",
-                },
-            )
-
-    ctx.add_shutdown_callback(keepalive_probe)
+            _publish_phase("speaking", intent="keepalive")
+            try:
+                await session.say(prompt, allow_interruptions=True)
+            except Exception as err:
+                logger.debug("Keepalive TTS failed", extra={"error": str(err)})
+            _publish_phase("listening", intent="keepalive")
 
     # # Add a virtual avatar to the session, if desired
     # # For other providers, see https://docs.livekit.io/agents/models/avatar/
@@ -348,6 +477,16 @@ async def entrypoint(ctx: JobContext):
 
     # Join the room and connect to the user
     await ctx.connect()
+    logger.info("Connected to room", extra={"room": ctx.room.name, "session_id": runtime_session_id})
+    _publish_phase("listening", intent="connected")
+
+    keepalive_task = asyncio.create_task(keepalive_loop())
+
+    async def _cancel_keepalive() -> None:
+        if keepalive_task:
+            keepalive_task.cancel()
+
+    ctx.add_shutdown_callback(_cancel_keepalive)
 
 
 if __name__ == "__main__":

@@ -9,9 +9,16 @@ import { TranscriptView } from '@/components/app/transcript-view';
 import { VoiceControlBar } from '@/components/app/voice-control-bar';
 import { VoiceOrb } from '@/components/app/voice-orb';
 import { VoiceStatusPill } from '@/components/app/voice-status-pill';
+import { BudgetIndicator } from '@/components/app/budget-indicator';
+import { LiveMetricsPanel } from '@/components/app/live-metrics-panel';
+import { InterruptHint } from '@/components/app/interrupt-hint';
+import { QueuePositionIndicator } from '@/components/app/queue-position-indicator';
+import { LatencyDebugPanel } from '@/components/app/latency-debug-panel';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
 import { useVoiceSessionState } from '@/hooks/useVoiceSessionState';
+import { useLiveMetrics } from '@/hooks/useLiveMetrics';
+import { useSession } from '@/components/app/session-provider';
 
 interface SessionViewProps {
   appConfig: AppConfig;
@@ -29,6 +36,8 @@ export const SessionView = ({
   const messages = useChatMessages();
   const { phase } = useVoiceSessionState();
   const room = useRoomContext();
+  const { queuePosition } = useSession();
+  const liveMetrics = useLiveMetrics();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,10 +72,14 @@ export const SessionView = ({
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="absolute top-8 right-0 left-0 z-50 flex w-full items-center justify-between px-6 md:px-12"
+        className="absolute top-8 right-0 left-0 z-50 flex w-full items-center justify-between gap-3 px-6 md:px-12"
       >
         <ConnectionIndicator state={room.state} />
-        <VoiceStatusPill phase={phase} />
+        <div className="flex items-center gap-3">
+          <QueuePositionIndicator queuePosition={queuePosition} />
+          <BudgetIndicator metrics={liveMetrics} />
+          <VoiceStatusPill phase={phase} />
+        </div>
       </motion.div>
 
       {/* Center Voice Orb - Absolute Dead Center */}
@@ -106,6 +119,13 @@ export const SessionView = ({
       >
         <VoiceControlBar isChatOpen={chatOpen} onChatOpenChange={setChatOpen} />
       </motion.div>
+
+      {/* Side panels */}
+      <div className="pointer-events-none absolute right-6 bottom-28 z-50 hidden flex-col items-end gap-3 md:flex">
+        <InterruptHint show={phase === 'speaking'} />
+        <LiveMetricsPanel metrics={liveMetrics} />
+        <LatencyDebugPanel metrics={liveMetrics} />
+      </div>
     </section>
   );
 };
