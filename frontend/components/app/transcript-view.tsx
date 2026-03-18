@@ -35,23 +35,23 @@ export function TranscriptView({ messages, className }: TranscriptViewProps) {
                 ease: [0.22, 1, 0.36, 1],
                 layout: { duration: 0.4 },
               }}
-              className={cn('flex w-full flex-col', isAgent ? 'items-start' : 'items-end')}
+              className={cn('mt-4 flex w-full flex-col', isAgent ? 'items-start' : 'items-end')}
             >
               {isAgent ? (
                 <GlassCard
                   intensity="low"
                   glowColor="rgba(56,189,248,0.15)"
-                  className="max-w-[85%] rounded-2xl px-6 py-4 text-base leading-relaxed md:text-lg"
+                  className="max-w-[90%] rounded-3xl px-6 py-4 text-base leading-relaxed font-medium text-white shadow-[0_4px_20px_rgba(0,0,0,0.5)] md:text-lg"
                 >
                   {msg.message}
                 </GlassCard>
               ) : (
-                <div className="dark:bg-foreground dark:text-background max-w-[85%] rounded-2xl bg-white px-6 py-4 text-base leading-relaxed font-medium text-black shadow-lg md:text-lg">
+                <div className="max-w-[85%] rounded-3xl border border-white/5 bg-white/10 px-6 py-4 text-base leading-relaxed font-medium text-white shadow-lg backdrop-blur-md md:text-lg">
                   {msg.message}
                 </div>
               )}
 
-              <span className="text-muted-foreground mt-2.5 px-3 text-[10px] font-bold tracking-[0.2em] uppercase opacity-40">
+              <span className="mt-2.5 px-4 text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">
                 {isAgent ? 'Voca' : 'You'}
               </span>
             </motion.div>

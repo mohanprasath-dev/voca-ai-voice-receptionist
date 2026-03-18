@@ -50,15 +50,16 @@ export function VoiceControlBar({
   return (
     <div
       className={cn(
-        'mx-auto flex max-w-sm items-center justify-between gap-2 rounded-full border border-white/10 bg-white/5 p-2 shadow-[0_0_50px_rgba(255,255,255,0.05)] backdrop-blur-3xl transition-all duration-300 md:gap-4',
+        'mx-auto flex w-fit max-w-sm min-w-[320px] items-center justify-between gap-3 rounded-full border border-white/10 bg-black/40 p-2.5 shadow-[0_0_50px_rgba(255,255,255,0.05)] backdrop-blur-3xl transition-all duration-300 md:gap-4',
         className
       )}
       {...props}
     >
       <div className="flex gap-2">
         <GlassButton
-          variant={microphoneToggle.enabled ? 'ghost' : 'danger'}
+          variant={microphoneToggle.enabled ? 'primary' : 'danger'}
           size="icon"
+          className="size-12 rounded-full"
           onClick={() => microphoneToggle.toggle()}
           aria-label={microphoneToggle.enabled ? 'Mute' : 'Unmute'}
         >
@@ -70,12 +71,13 @@ export function VoiceControlBar({
         </GlassButton>
 
         <GlassButton
-          variant={chatOpen ? 'primary' : 'ghost'}
+          variant={chatOpen ? 'secondary' : 'ghost'}
           size="icon"
+          className="size-12 rounded-full"
           onClick={handleToggleTranscript}
           aria-label="Toggle transcript"
         >
-          <ChatTextIcon weight="bold" className="size-5" />
+          <ChatTextIcon weight="bold" className="size-5 text-white/80" />
         </GlassButton>
       </div>
 
@@ -84,7 +86,7 @@ export function VoiceControlBar({
         size="md"
         onClick={handleDisconnect}
         disabled={!isSessionActive}
-        className="min-w-[140px] flex-1 text-[11px] font-black tracking-widest uppercase md:text-xs"
+        className="h-12 min-w-[120px] flex-1 rounded-full text-[11px] font-black tracking-widest uppercase md:text-xs"
       >
         <PhoneDisconnectIcon weight="bold" className="size-4" />
         Stop

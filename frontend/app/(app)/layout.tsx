@@ -13,8 +13,8 @@ export default function Layout({ children }: LayoutProps) {
   const isDemo = pathname?.startsWith('/demo');
 
   return (
-    <div className="bg-background text-foreground flex min-h-screen flex-col">
-      <Navbar />
+    <div className="bg-background text-foreground flex min-h-[100dvh] flex-col overflow-hidden">
+      {!isDemo && <Navbar />}
       <main className="flex flex-1 flex-col">{children}</main>
       {!isDemo && <Footer />}
     </div>

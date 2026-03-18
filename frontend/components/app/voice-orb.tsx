@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { motion } from 'motion/react';
 import type { VoicePhase } from '@/lib/contracts';
@@ -61,20 +62,64 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
     ended: { scale: 0.9 },
   };
 
+  const ringVariants: any = {
+    idle: { opacity: 0, scale: 0.8 },
+    listening: {
+      opacity: [0, 0.5, 0],
+      scale: [0.8, 2],
+      transition: { repeat: Infinity, duration: 2, ease: 'easeOut' },
+    },
+    reasoning: { opacity: 0, scale: 0.8 },
+    speaking: { opacity: 0, scale: 0.8 },
+    awaiting_confirmation: { opacity: 0 },
+    escalated: { opacity: 0 },
+    ended: { opacity: 0 },
+  };
+
+  const ringVariantsDelayed: any = {
+    idle: { opacity: 0, scale: 0.8 },
+    listening: {
+      opacity: [0, 0.3, 0],
+      scale: [0.8, 2.5],
+      transition: { repeat: Infinity, duration: 2, delay: 0.5, ease: 'easeOut' },
+    },
+    reasoning: { opacity: 0, scale: 0.8 },
+    speaking: { opacity: 0, scale: 0.8 },
+    awaiting_confirmation: { opacity: 0 },
+    escalated: { opacity: 0 },
+    ended: { opacity: 0 },
+  };
+
   const colorMap: Record<string, string> = {
     idle: 'bg-white/20',
-    listening: 'bg-emerald-400',
-    reasoning: 'bg-amber-400',
-    speaking: 'bg-cyan-400',
-    awaiting_confirmation: 'bg-violet-400',
-    escalated: 'bg-indigo-400',
+    listening: 'bg-cyan-400',
+    reasoning: 'bg-blue-400',
+    speaking: 'bg-white',
+    awaiting_confirmation: 'bg-cyan-500',
+    escalated: 'bg-blue-500',
     ended: 'bg-rose-500',
   };
 
   const activeColor = colorMap[phase] || colorMap.idle;
+  // Use string manipulation to get border color for rings based on background color class
+  const ringColor = activeColor.replace('bg-', 'border-');
 
   return (
     <div className={cn('relative flex size-48 items-center justify-center md:size-64', className)}>
+      {/* Expanding Rings for Listening State */}
+      <motion.div
+        variants={ringVariants}
+        animate={phase}
+        initial="idle"
+        className={cn('absolute inset-0 rounded-full border-2', ringColor)}
+      />
+      <motion.div
+        variants={ringVariantsDelayed}
+        animate={phase}
+        initial="idle"
+        className={cn('absolute inset-0 rounded-full border', ringColor)}
+      />
+
       {/* Outer Glow Orb */}
       <motion.div
         variants={orbVariants}
