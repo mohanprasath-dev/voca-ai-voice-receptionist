@@ -22,7 +22,7 @@ export function BudgetIndicator({ metrics, className }: BudgetIndicatorProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-full border border-white/10 bg-black/40 px-4 py-2 backdrop-blur-2xl',
+        'glass flex items-center gap-3 rounded-full px-4 py-2',
         className
       )}
       aria-label="Budget usage"

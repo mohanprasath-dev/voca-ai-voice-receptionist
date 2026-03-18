@@ -4,7 +4,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 active:scale-95 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 active:scale-95 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -15,7 +15,7 @@ const buttonVariants = cva(
         outline: 'border border-border bg-transparent hover:bg-accent hover:text-accent-foreground',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
-        glow: 'bg-foreground text-background hover:bg-foreground/90 shadow-[0_0_25px_rgba(255,255,255,0.2)] border border-white/20',
+        glow: 'glass text-white shadow-[0_0_60px_rgba(34,211,238,0.12)] ring-1 ring-cyan-300/10 hover:ring-cyan-300/20 hover:shadow-[0_0_85px_rgba(34,211,238,0.16)]',
         destructive:
           'bg-destructive text-background hover:bg-destructive/90 shadow-[0_0_20px_rgba(239,68,68,0.2)]',
       },

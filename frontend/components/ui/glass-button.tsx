@@ -10,16 +10,16 @@ interface GlassButtonProps extends HTMLMotionProps<'button'> {
 export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(
   ({ className, children, variant = 'primary', size = 'md', ...props }, ref) => {
     const baseStyles =
-      'relative inline-flex items-center justify-center font-semibold tracking-wide transition-all z-10 overflow-hidden';
+      'glass relative inline-flex items-center justify-center font-semibold tracking-wide transition-all z-10 overflow-hidden will-change-transform';
 
     const variants = {
       primary:
-        'bg-white/10 text-white border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:bg-white/20 hover:border-white/30 hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] backdrop-blur-lg',
+        'text-white ring-1 ring-cyan-300/10 hover:ring-cyan-300/25 shadow-[0_0_40px_rgba(34,211,238,0.12)] hover:shadow-[0_0_60px_rgba(34,211,238,0.18)]',
       secondary:
-        'bg-black/40 text-white border border-white/10 hover:bg-white/10 hover:border-white/20 backdrop-blur-lg',
+        'text-white/90 hover:text-white ring-1 ring-white/10 hover:ring-white/15 shadow-[0_0_30px_rgba(255,255,255,0.06)] hover:shadow-[0_0_42px_rgba(255,255,255,0.10)]',
       ghost: 'bg-transparent text-white/70 hover:text-white hover:bg-white/5',
       danger:
-        'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/30 backdrop-blur-lg shadow-[0_0_20px_rgba(244,63,94,0.1)]',
+        'text-rose-200 ring-1 ring-rose-400/15 hover:ring-rose-400/25 shadow-[0_0_40px_rgba(244,63,94,0.10)] hover:shadow-[0_0_60px_rgba(244,63,94,0.14)]',
     };
 
     const sizes = {
@@ -32,8 +32,8 @@ export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>
     return (
       <motion.button
         ref={ref}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.025, y: -0.5 }}
+        whileTap={{ scale: 0.985, y: 0 }}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
         {...props}
       >
@@ -41,7 +41,10 @@ export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>
           {children as React.ReactNode}
         </span>
         {variant !== 'ghost' && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent opacity-50" />
+          <>
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/12 to-transparent opacity-60" />
+            <div className="pointer-events-none absolute -inset-px rounded-[inherit] bg-gradient-to-b from-white/8 via-transparent to-transparent opacity-70" />
+          </>
         )}
       </motion.button>
     );

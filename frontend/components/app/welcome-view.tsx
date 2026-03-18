@@ -17,32 +17,42 @@ export const WelcomeView = ({
   ...props
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
-    <div className="bg-background flex h-full w-full items-center justify-center p-6" {...props}>
-      <Container className="max-w-2xl text-center">
+    <div
+      className="ambient-bg noise-overlay relative flex h-full w-full items-center justify-center overflow-hidden p-6"
+      {...props}
+    >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute top-[-220px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-500/18 blur-[140px]" />
+        <div className="absolute bottom-[-260px] left-[10%] h-[600px] w-[600px] rounded-full bg-indigo-500/12 blur-[160px]" />
+      </div>
+
+      <Container className="relative z-10 max-w-2xl text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-foreground mb-12 inline-flex size-24 items-center justify-center rounded-[2rem] shadow-[0_0_50px_rgba(255,255,255,0.1)]"
+          className="glass mb-10 inline-flex size-24 items-center justify-center rounded-[2rem] shadow-[0_0_70px_rgba(34,211,238,0.12)]"
         >
-          <SpeakerHigh className="text-background size-10" weight="fill" />
+          <SpeakerHigh className="size-10 text-white/90" weight="fill" />
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-extrabold tracking-tight sm:text-6xl"
+          className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl"
         >
-          Ready to Talk?
+          <span className="text-gradient-ai">Premium</span> voice,
+          <br />
+          in real time.
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="text-muted-foreground mt-6 text-lg leading-relaxed"
+          className="mt-6 text-lg leading-relaxed text-white/70"
         >
-          Step into a seamless voice-first experience. Voca is ready to assist you in real-time with
-          zero latency.
+          Talk naturally. Interrupt anytime. Voca listens, thinks, and responds with production-grade
+          latency.
         </motion.p>
 
         <motion.div
@@ -54,7 +64,8 @@ export const WelcomeView = ({
           <Button
             size="lg"
             onClick={onStartCall}
-            className="h-16 px-12 text-xl font-bold shadow-2xl"
+            variant="glow"
+            className="glass h-16 px-12 text-lg font-bold tracking-wide shadow-[0_0_70px_rgba(34,211,238,0.12)] transition-transform active:scale-[0.98]"
           >
             {startButtonText}
           </Button>
@@ -64,23 +75,23 @@ export const WelcomeView = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="mt-20 grid grid-cols-1 gap-8 border-t border-white/5 pt-12 sm:grid-cols-3"
+          className="mt-16 grid grid-cols-1 gap-6 border-t border-white/10 pt-10 sm:grid-cols-3"
         >
-          <div className="flex flex-col items-center gap-2">
+          <div className="glass flex flex-col items-center gap-2 rounded-2xl px-5 py-4">
             <Microphone className="size-5 text-emerald-400" weight="bold" />
-            <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+            <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
               Voice Enabled
             </span>
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="glass flex flex-col items-center gap-2 rounded-2xl px-5 py-4">
             <ShieldCheck className="size-5 text-blue-400" weight="bold" />
-            <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+            <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
               Secure Path
             </span>
           </div>
-          <div className="flex flex-col items-center gap-2">
+          <div className="glass flex flex-col items-center gap-2 rounded-2xl px-5 py-4">
             <SpeakerHigh className="size-5 text-amber-400" weight="bold" />
-            <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
+            <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
               Real-time Audio
             </span>
           </div>

@@ -23,14 +23,16 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
       <motion.div
         ref={ref}
         className={cn(
-          'relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl',
+          'glass relative overflow-hidden rounded-3xl',
           intensityMap[intensity],
           className
         )}
         {...props}
       >
         {/* Subtle top edge highlight */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+        {/* Inner glow edge */}
+        <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-white/5" />
         {children as React.ReactNode}
       </motion.div>
     );

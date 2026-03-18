@@ -51,7 +51,7 @@ export const SessionView = ({
 
   return (
     <section
-      className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#050505] font-sans selection:bg-cyan-500/30"
+      className="ambient-bg noise-overlay relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#050505] font-sans selection:bg-cyan-500/30"
       {...props}
     >
       {/* Deep Space Background Glows */}
@@ -64,7 +64,8 @@ export const SessionView = ({
           transition={{ duration: 2, ease: 'easeInOut' }}
           className="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/30 blur-[150px]"
         />
-        <div className="absolute -bottom-40 left-1/2 h-[600px] w-[800px] -translate-x-1/2 rounded-[100%] bg-blue-500/10 blur-[120px]" />
+        <div className="absolute -bottom-40 left-1/2 h-[600px] w-[900px] -translate-x-1/2 rounded-[100%] bg-blue-500/12 blur-[120px]" />
+        <div className="absolute top-16 right-[-140px] h-[520px] w-[520px] rounded-full bg-indigo-500/10 blur-[120px]" />
       </div>
 
       {/* Floating Header */}

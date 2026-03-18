@@ -27,13 +27,10 @@ export function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent position="left" className="pr-0">
-        <Link href="/" className="group flex items-center gap-2" onClick={() => setOpen(false)}>
-          <div className="bg-foreground relative size-8 overflow-hidden rounded-lg p-[1px]">
-            <div className="bg-background flex h-full w-full items-center justify-center rounded-[7px]">
-              <div className="bg-foreground size-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-            </div>
-          </div>
-          <span className="text-xl font-bold tracking-tight">Voca</span>
+        <Link href="/" className="group flex items-center" onClick={() => setOpen(false)}>
+          <span className="text-gradient-ai text-[15px] font-semibold tracking-[0.12em] uppercase">
+            Voca
+          </span>
         </Link>
         <div className="bg-border my-4 h-[1px] w-full" />
         <div className="flex flex-col space-y-4">

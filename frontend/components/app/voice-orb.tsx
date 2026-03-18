@@ -16,13 +16,13 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
       <div
         className={cn('relative flex size-48 items-center justify-center md:size-64', className)}
       >
-        <div className="absolute inset-0 rounded-full border border-white/10 bg-white/5" />
+        <div className="glass absolute inset-0 rounded-full" />
       </div>
     );
   }
 
   const orbVariants: any = {
-    idle: { scale: 1, filter: 'blur(10px)', opacity: 0.5 },
+    idle: { scale: 1, filter: 'blur(10px)', opacity: 0.45 },
     listening: {
       scale: [1, 1.05, 1],
       filter: 'blur(12px)',
@@ -30,10 +30,10 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
       transition: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
     },
     reasoning: {
-      scale: [1, 1.02, 1],
-      filter: 'blur(20px)',
-      opacity: [0.5, 0.9, 0.5],
-      transition: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' },
+      scale: [1, 1.03, 1],
+      filter: 'blur(18px)',
+      opacity: [0.5, 0.95, 0.55],
+      transition: { repeat: Infinity, duration: 1.3, ease: 'easeInOut' },
     },
     speaking: {
       scale: [1, 1.2, 1.05, 1.25, 1],
@@ -52,7 +52,10 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
       scale: [1, 1.1, 1],
       transition: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
     },
-    reasoning: { rotate: 360, transition: { repeat: Infinity, duration: 4, ease: 'linear' } },
+    reasoning: {
+      rotate: 360,
+      transition: { repeat: Infinity, duration: 3.2, ease: 'linear' },
+    },
     speaking: {
       scale: [1, 1.3, 1.1, 1.4, 1],
       transition: { repeat: Infinity, duration: 0.8, ease: 'easeInOut' },
@@ -104,6 +107,16 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
   // Use string manipulation to get border color for rings based on background color class
   const ringColor = activeColor.replace('bg-', 'border-');
 
+  const shadowMap: Record<string, string> = {
+    idle: '0 0 40px rgba(255,255,255,0.12)',
+    listening: '0 0 70px rgba(34,211,238,0.30)',
+    reasoning: '0 0 75px rgba(99,102,241,0.28)',
+    speaking: '0 0 95px rgba(255,255,255,0.22), 0 0 140px rgba(34,211,238,0.22)',
+    awaiting_confirmation: '0 0 70px rgba(34,211,238,0.28)',
+    escalated: '0 0 70px rgba(99,102,241,0.28)',
+    ended: '0 0 50px rgba(244,63,94,0.18)',
+  };
+
   return (
     <div className={cn('relative flex size-48 items-center justify-center md:size-64', className)}>
       {/* Expanding Rings for Listening State */}
@@ -125,7 +138,8 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
         variants={orbVariants}
         animate={phase}
         initial="idle"
-        className={cn('absolute inset-0 rounded-full opacity-50 mix-blend-screen', activeColor)}
+        style={{ boxShadow: shadowMap[phase] ?? shadowMap.idle }}
+        className={cn('absolute inset-0 rounded-full opacity-55 mix-blend-screen', activeColor)}
       />
 
       {/* Inner Solid Core */}
@@ -134,13 +148,21 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
         animate={phase}
         initial="idle"
         className={cn(
-          'relative size-24 rounded-full border border-white/20 shadow-[0_0_40px_currentColor] md:size-32',
+          'relative size-24 rounded-full border border-white/20 md:size-32',
           activeColor
         )}
+        style={{
+          boxShadow:
+            phase === 'speaking'
+              ? '0 0 70px rgba(255,255,255,0.22), 0 0 120px rgba(34,211,238,0.22)'
+              : phase === 'reasoning'
+                ? '0 0 85px rgba(99,102,241,0.25)'
+                : '0 0 80px rgba(34,211,238,0.22)',
+        }}
       />
 
       {/* Core Highlight */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/20 blur-md md:size-16" />
+      <div className="pointer-events-none absolute top-1/2 left-1/2 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/18 blur-md md:size-16" />
     </div>
   );
 }

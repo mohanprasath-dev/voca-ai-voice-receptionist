@@ -17,16 +17,13 @@ export const Navbar = () => {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-background/50 fixed top-0 right-0 left-0 z-[100] border-b border-white/5 backdrop-blur-xl">
+    <nav className="fixed top-0 right-0 left-0 z-[100] border-b border-white/5 bg-black/25 backdrop-blur-2xl">
       <Container>
         <div className="flex h-20 items-center justify-between">
-          <Link href="/" className="group flex items-center gap-2">
-            <div className="bg-foreground relative size-8 overflow-hidden rounded-lg p-[1px]">
-              <div className="bg-background flex h-full w-full items-center justify-center rounded-[7px]">
-                <div className="bg-foreground size-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-              </div>
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">Voca</span>
+          <Link href="/" className="group flex items-center">
+            <span className="text-gradient-ai text-[17px] font-semibold tracking-[0.12em] uppercase text-white/95">
+              Voca
+            </span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -35,7 +32,7 @@ export const Navbar = () => {
                 key={link.name}
                 href={link.href}
                 className={cn(
-                  'hover:text-foreground text-sm font-medium transition-colors',
+                  'text-sm font-medium tracking-wide transition-colors hover:text-white',
                   pathname === link.href ? 'text-white' : 'text-white/60'
                 )}
               >

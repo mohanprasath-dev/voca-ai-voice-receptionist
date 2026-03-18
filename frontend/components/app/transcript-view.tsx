@@ -41,12 +41,12 @@ export function TranscriptView({ messages, className }: TranscriptViewProps) {
                 <GlassCard
                   intensity="low"
                   glowColor="rgba(56,189,248,0.15)"
-                  className="max-w-[90%] rounded-3xl px-6 py-4 text-base leading-relaxed font-medium text-white shadow-[0_4px_20px_rgba(0,0,0,0.5)] md:text-lg"
+                  className="max-w-[92%] rounded-3xl px-6 py-4 text-base leading-relaxed font-medium text-white shadow-[0_10px_40px_rgba(0,0,0,0.55)] md:text-lg"
                 >
-                  {msg.message}
+                  <span className="text-gradient-ai">{msg.message}</span>
                 </GlassCard>
               ) : (
-                <div className="max-w-[85%] rounded-3xl border border-white/5 bg-white/10 px-6 py-4 text-base leading-relaxed font-medium text-white shadow-lg backdrop-blur-md md:text-lg">
+                <div className="glass max-w-[85%] rounded-3xl px-6 py-4 text-base leading-relaxed font-medium text-white shadow-[0_10px_40px_rgba(0,0,0,0.45)] md:text-lg">
                   {msg.message}
                 </div>
               )}
