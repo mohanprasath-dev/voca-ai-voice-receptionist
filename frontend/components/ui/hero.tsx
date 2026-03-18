@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Button } from './button';
 import { Container } from './container';
+import { GlassButton } from './glass-button';
 
 export const Hero = () => {
   return (
@@ -26,48 +27,45 @@ export const Hero = () => {
             </span>
           </motion.div>
 
-          <motion.h1
-            className="from-foreground via-foreground/90 to-foreground/70 mt-8 bg-gradient-to-b bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-7xl lg:text-8xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+          <motion.div
+            className="from-foreground via-foreground/90 to-background/50 mt-6 bg-gradient-to-b bg-clip-text text-5xl leading-[1.1] font-extrabold tracking-tight text-transparent sm:text-7xl lg:text-[6rem]"
+            initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            transition={{ duration: 0.8, delay: 0.1, ease: 'easeOut' }}
           >
             Voice-First <br />
             Intelligence.
-          </motion.h1>
+          </motion.div>
 
           <motion.p
-            className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg sm:text-xl"
+            className="text-muted-foreground mx-auto mt-8 max-w-2xl text-lg font-medium tracking-wide sm:text-xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             Voca is a premium, real-time AI conversational engine that redefines how humans interact
-            with technology. Experience ultra-low latency voice synthesis with Murf Falcon.
+            with technology. Experience absolute flawless latency.
           </motion.p>
 
           <motion.div
-            className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row"
+            className="mt-12 flex flex-col items-center justify-center gap-6 sm:flex-row"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <Link href="/demo">
-              <Button
-                size="lg"
-                className="h-14 px-10 text-lg shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-              >
+              <GlassButton variant="primary" size="lg" className="w-full px-12 text-base sm:w-auto">
                 Launch Experience
-              </Button>
+              </GlassButton>
             </Link>
             <Link href="#features">
-              <Button
-                variant="outline"
+              <GlassButton
+                variant="secondary"
                 size="lg"
-                className="h-14 px-10 text-lg backdrop-blur-sm transition-all hover:bg-white/5"
+                className="w-full px-12 text-base sm:w-auto"
               >
                 Explore Features
-              </Button>
+              </GlassButton>
             </Link>
           </motion.div>
 

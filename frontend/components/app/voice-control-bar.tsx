@@ -10,7 +10,7 @@ import {
   PhoneDisconnectIcon,
 } from '@phosphor-icons/react/dist/ssr';
 import { useSession } from '@/components/app/session-provider';
-import { Button } from '@/components/ui/button';
+import { GlassButton } from '@/components/ui/glass-button';
 import { useInputControls } from '@/hooks/useInputControls';
 import { cn } from '@/lib/utils';
 
@@ -50,20 +50,16 @@ export function VoiceControlBar({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-4 rounded-full border border-white/10 bg-black/60 p-2.5 shadow-2xl backdrop-blur-2xl transition-all duration-300',
+        'mx-auto flex max-w-sm items-center justify-between gap-2 rounded-full border border-white/10 bg-white/5 p-2 shadow-[0_0_50px_rgba(255,255,255,0.05)] backdrop-blur-3xl transition-all duration-300 md:gap-4',
         className
       )}
       {...props}
     >
       <div className="flex gap-2">
-        <button
+        <GlassButton
+          variant={microphoneToggle.enabled ? 'ghost' : 'danger'}
+          size="icon"
           onClick={() => microphoneToggle.toggle()}
-          className={cn(
-            'flex size-12 items-center justify-center rounded-full transition-all duration-500 active:scale-90',
-            microphoneToggle.enabled
-              ? 'text-foreground bg-white/5 hover:bg-white/15'
-              : 'bg-rose-500/15 text-rose-500 hover:bg-rose-500/25'
-          )}
           aria-label={microphoneToggle.enabled ? 'Mute' : 'Unmute'}
         >
           {microphoneToggle.enabled ? (
@@ -71,31 +67,28 @@ export function VoiceControlBar({
           ) : (
             <MicrophoneSlashIcon weight="bold" className="size-5" />
           )}
-        </button>
+        </GlassButton>
 
-        <button
+        <GlassButton
+          variant={chatOpen ? 'primary' : 'ghost'}
+          size="icon"
           onClick={handleToggleTranscript}
-          className={cn(
-            'flex size-12 items-center justify-center rounded-full transition-all duration-500 active:scale-90',
-            chatOpen
-              ? 'bg-foreground text-background'
-              : 'text-foreground bg-white/5 hover:bg-white/15'
-          )}
           aria-label="Toggle transcript"
         >
           <ChatTextIcon weight="bold" className="size-5" />
-        </button>
+        </GlassButton>
       </div>
 
-      <Button
-        variant="destructive"
+      <GlassButton
+        variant="danger"
+        size="md"
         onClick={handleDisconnect}
         disabled={!isSessionActive}
-        className="shadow-destructive/20 h-12 rounded-full px-8 text-xs font-black tracking-[0.15em] uppercase shadow-lg"
+        className="min-w-[140px] flex-1 text-[11px] font-black tracking-widest uppercase md:text-xs"
       >
-        <PhoneDisconnectIcon weight="bold" className="mr-2.5 size-4" />
-        End Session
-      </Button>
+        <PhoneDisconnectIcon weight="bold" className="size-4" />
+        Stop
+      </GlassButton>
     </div>
   );
 }

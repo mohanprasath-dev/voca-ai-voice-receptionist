@@ -7,6 +7,7 @@ import type { AppConfig } from '@/app-config';
 import { ConnectionIndicator } from '@/components/app/connection-indicator';
 import { TranscriptView } from '@/components/app/transcript-view';
 import { VoiceControlBar } from '@/components/app/voice-control-bar';
+import { VoiceOrb } from '@/components/app/voice-orb';
 import { VoiceStatusPill } from '@/components/app/voice-status-pill';
 import { Container } from '@/components/ui/container';
 import { useChatMessages } from '@/hooks/useChatMessages';
@@ -69,37 +70,9 @@ export const SessionView = ({
         {/* Experience Zone */}
         <div className="flex w-full flex-1 flex-col items-center justify-center overflow-hidden">
           {/* Visual Orb */}
+          {/* Refactored Voice Orb */}
           <div className="relative mb-8 flex items-center justify-center md:mb-12">
-            <motion.div
-              animate={{
-                scale: phase === 'speaking' ? [1, 1.2, 1] : 1,
-                opacity: phase === 'listening' ? [0.4, 0.7, 0.4] : 0.5,
-              }}
-              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-              className="bg-primary/30 absolute size-48 rounded-full blur-3xl md:size-64"
-            />
-
-            <div className="bg-foreground relative flex size-32 items-center justify-center rounded-full shadow-[0_0_60px_rgba(255,255,255,0.15)] md:size-40">
-              <div className="bg-background flex size-16 items-center justify-center rounded-full md:size-20">
-                <div className="flex h-10 items-end gap-1.5">
-                  <motion.div
-                    animate={{ height: phase === 'speaking' ? [4, 30, 15, 40, 4] : 4 }}
-                    transition={{ repeat: Infinity, duration: 0.8 }}
-                    className="bg-foreground w-1.5 rounded-full"
-                  />
-                  <motion.div
-                    animate={{ height: phase === 'speaking' ? [8, 40, 20, 50, 8] : 8 }}
-                    transition={{ repeat: Infinity, duration: 1.1 }}
-                    className="bg-foreground w-1.5 rounded-full"
-                  />
-                  <motion.div
-                    animate={{ height: phase === 'speaking' ? [4, 25, 12, 35, 4] : 4 }}
-                    transition={{ repeat: Infinity, duration: 0.9 }}
-                    className="bg-foreground w-1.5 rounded-full"
-                  />
-                </div>
-              </div>
-            </div>
+            <VoiceOrb phase={phase} isSessionActive={room.state === 'connected'} />
           </div>
 
           <AnimatePresence>

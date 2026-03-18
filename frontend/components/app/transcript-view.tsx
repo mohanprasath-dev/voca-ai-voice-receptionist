@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { type ReceivedChatMessage } from '@livekit/components-react';
+import { GlassCard } from '@/components/ui/glass-card';
 import { cn } from '@/lib/utils';
 
 interface TranscriptViewProps {
@@ -36,16 +37,20 @@ export function TranscriptView({ messages, className }: TranscriptViewProps) {
               }}
               className={cn('flex w-full flex-col', isAgent ? 'items-start' : 'items-end')}
             >
-              <div
-                className={cn(
-                  'max-w-[85%] rounded-2xl px-6 py-4 text-base leading-relaxed shadow-2xl md:text-lg',
-                  isAgent
-                    ? 'text-foreground border border-white/10 bg-white/5 backdrop-blur-md'
-                    : 'bg-foreground text-background font-medium'
-                )}
-              >
-                {msg.message}
-              </div>
+              {isAgent ? (
+                <GlassCard
+                  intensity="low"
+                  glowColor="rgba(56,189,248,0.15)"
+                  className="max-w-[85%] rounded-2xl px-6 py-4 text-base leading-relaxed md:text-lg"
+                >
+                  {msg.message}
+                </GlassCard>
+              ) : (
+                <div className="dark:bg-foreground dark:text-background max-w-[85%] rounded-2xl bg-white px-6 py-4 text-base leading-relaxed font-medium text-black shadow-lg md:text-lg">
+                  {msg.message}
+                </div>
+              )}
+
               <span className="text-muted-foreground mt-2.5 px-3 text-[10px] font-bold tracking-[0.2em] uppercase opacity-40">
                 {isAgent ? 'Voca' : 'You'}
               </span>

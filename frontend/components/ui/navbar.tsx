@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button } from './button';
 import { Container } from './container';
+import { GlassButton } from './glass-button';
 import { MobileNav } from './mobile-nav';
 
 const NAV_LINKS = [
@@ -26,7 +26,7 @@ export const Navbar = () => {
                 <div className="bg-foreground size-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
               </div>
             </div>
-            <span className="text-xl font-bold tracking-tight">Voca</span>
+            <span className="text-xl font-bold tracking-tight text-white">Voca</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -36,7 +36,7 @@ export const Navbar = () => {
                 href={link.href}
                 className={cn(
                   'hover:text-foreground text-sm font-medium transition-colors',
-                  pathname === link.href ? 'text-foreground' : 'text-muted-foreground'
+                  pathname === link.href ? 'text-white' : 'text-white/60'
                 )}
               >
                 {link.name}
@@ -46,9 +46,9 @@ export const Navbar = () => {
 
           <div className="flex items-center gap-2">
             <Link href="/demo">
-              <Button variant="glow" size="sm" className="px-5">
+              <GlassButton variant="primary" size="sm" className="px-5">
                 Try Demo
-              </Button>
+              </GlassButton>
             </Link>
             <MobileNav />
           </div>

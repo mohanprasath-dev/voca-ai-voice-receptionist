@@ -12,6 +12,8 @@ import {
 } from '@phosphor-icons/react';
 import { Button } from './button';
 import { Container } from './container';
+import { GlassButton } from './glass-button';
+import { GlassCard } from './glass-card';
 
 const FEATURES = [
   {
@@ -49,11 +51,11 @@ const FEATURES = [
 
 export const Features = () => {
   return (
-    <section id="features" className="py-24 md:py-32">
+    <section id="features" className="relative z-10 py-24 md:py-32">
       <Container>
         <div className="text-center">
           <motion.h2
-            className="text-4xl font-bold tracking-tight sm:text-5xl"
+            className="bg-gradient-to-br from-white to-white/60 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl lg:text-6xl"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -62,7 +64,7 @@ export const Features = () => {
             Engineered for <br className="sm:hidden" /> Perfect Conversations.
           </motion.h2>
           <motion.p
-            className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg"
+            className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg font-medium"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -73,21 +75,28 @@ export const Features = () => {
           </motion.p>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.title}
-              className="group relative rounded-3xl border border-white/5 bg-white/5 p-8 backdrop-blur-sm transition-all hover:border-white/10 hover:bg-white/10"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <div className="bg-foreground text-background mb-6 inline-flex size-12 items-center justify-center rounded-2xl p-2.5 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-transform group-hover:scale-110">
-                <feature.icon size={24} weight="bold" />
-              </div>
-              <h3 className="text-xl font-bold">{feature.title}</h3>
-              <p className="text-muted-foreground mt-4 leading-relaxed">{feature.description}</p>
+              <GlassCard
+                intensity="medium"
+                glowColor="rgba(56,189,248,0.1)"
+                className="group h-full p-8 transition-all hover:-translate-y-2 hover:bg-white/10"
+              >
+                <div className="bg-primary/20 text-primary mb-6 inline-flex size-14 items-center justify-center rounded-2xl p-2.5 shadow-[0_0_30px_rgba(56,189,248,0.3)] transition-transform group-hover:scale-110">
+                  <feature.icon size={28} weight="duotone" />
+                </div>
+                <h3 className="text-foreground text-xl font-bold">{feature.title}</h3>
+                <p className="text-muted-foreground mt-4 leading-relaxed font-medium">
+                  {feature.description}
+                </p>
+              </GlassCard>
             </motion.div>
           ))}
         </div>
@@ -98,39 +107,47 @@ export const Features = () => {
 
 export const CTASection = () => {
   return (
-    <section className="py-24">
+    <section className="relative z-10 w-full py-24">
       <Container>
-        <div className="border-primary/20 bg-primary/10 relative overflow-hidden rounded-3xl border px-8 py-16 md:px-16 md:py-24">
-          <div className="relative z-10 mx-auto max-w-2xl text-center">
-            <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
-              Ready to Revolutionize Your CX?
+        <GlassCard
+          intensity="high"
+          glowColor="rgba(56,189,248,0.2)"
+          className="relative overflow-hidden px-8 py-20 text-center md:px-16 md:py-28"
+        >
+          <div className="relative z-10 mx-auto max-w-3xl text-center">
+            <h2 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl">
+              Ready to{' '}
+              <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                Revolutionize
+              </span>{' '}
+              Your CX?
             </h2>
-            <p className="text-primary-foreground/80 mt-6 text-lg">
+            <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed font-medium text-white/70">
               Integrate Voca’s voice AI to deliver unparalleled customer experiences. Get started
               with our demo or talk to our sales team today.
             </p>
-            <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="mt-12 flex flex-col items-center justify-center gap-6 sm:flex-row">
               <Link href="/demo">
-                <Button size="lg" className="h-14 px-10 text-lg">
+                <GlassButton
+                  variant="primary"
+                  size="lg"
+                  className="w-full px-12 text-base sm:w-auto"
+                >
                   Try the Demo
-                </Button>
+                </GlassButton>
               </Link>
               <Link href="/contact">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-14 bg-transparent px-10 text-lg text-white hover:bg-white/10 hover:text-white"
-                >
+                <GlassButton variant="ghost" size="lg" className="w-full px-12 text-base sm:w-auto">
                   Contact Sales
-                </Button>
+                </GlassButton>
               </Link>
             </div>
           </div>
-          <div className="pointer-events-none absolute inset-0 z-0">
-            <div className="bg-primary/50 absolute -top-48 -left-32 h-[500px] w-[500px] rounded-full blur-[120px]" />
-            <div className="bg-accentDark/30 absolute -right-32 -bottom-48 h-[500px] w-[500px] rounded-full blur-[120px]" />
+          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden mix-blend-screen">
+            <div className="bg-primary/40 absolute -top-[50%] -left-[20%] h-[800px] w-[800px] rounded-full blur-[150px]" />
+            <div className="absolute -right-[20%] -bottom-[50%] h-[800px] w-[800px] rounded-full bg-blue-500/30 blur-[150px]" />
           </div>
-        </div>
+        </GlassCard>
       </Container>
     </section>
   );
