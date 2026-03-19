@@ -1,177 +1,191 @@
-# VOCA AI Voice Receptionist
+# Voca - AI Voice Receptionist
 
-Production-grade, voice-first AI receptionist built on LiveKit Agents with a custom orchestration layer for low-latency responses, interruption handling, multilingual segmentation, budget-aware generation, and reconnect resilience.
+Voca is a real-time, multilingual AI voice receptionist designed for production use. It combines streaming speech, orchestration intelligence, and human-like interaction controls to deliver instant, natural conversations for customer-facing businesses.
 
-## What This Project Is
+## Why Voca
 
-VOCA is a real-time receptionist agent that:
+Businesses lose leads when calls are missed, delayed, or routed through rigid IVR systems. Voca solves this with a voice-native AI receptionist that answers immediately, understands intent, captures context, and responds with low-latency conversational speech.
 
-- Listens and replies in natural conversation flow
-- Starts planning from partial STT for faster responses
-- Handles user interruptions (barge-in) while speaking
-- Adapts responses based on budget usage and latency
-- Publishes live session and telemetry data to the UI
-- Restores context after reconnect and prompts before idle timeout
+## What Makes It Production-Grade
 
-## Current Status
+- Real-time streaming pipeline, not batch request/response
+- Deterministic orchestration for policy, slot filling, and routing
+- Partial STT early-response planning for lower perceived latency
+- Barge-in interruption handling for natural turn-taking
+- Budget-aware response shaping for cost and reliability control
+- Reconnect resilience and keepalive behavior for long-running sessions
+- Live metrics and session telemetry over data channels
 
-- Milestones M1-M5 implemented and documented
-- Core orchestration tests passing (see Testing section)
-- Frontend and backend integrated through LiveKit + data channels
+## Core Stack
 
-Reference docs in this repo:
+- LiveKit: real-time media transport and session runtime
+- Deepgram: speech-to-text (STT)
+- Gemini: reasoning and response generation
+- Murf AI: text-to-speech (TTS)
+- Next.js: frontend experience and monitoring dashboard
+- Python + uv: backend orchestration and runtime
 
-- `SYSTEM_STATUS.md`
-- `MILESTONE_3_COMPLETION.md`
-- `MILESTONE_4_COMPLETION.md`
-- `MILESTONE_5_COMPLETION.md`
-- `PROGRESS.md`
+## High-Level Flow
 
-## Repository Structure
+1. Caller audio streams through LiveKit.
+2. Deepgram transcribes speech incrementally.
+3. Orchestration engine classifies intent and extracts slots.
+4. Gemini generates context-aware response content.
+5. Murf streams natural voice output in chunks.
+6. Frontend receives live metrics, session state, and transcript updates.
 
-```text
-voca-ai-voice-receptionist/
-|- backend/                 # Python LiveKit agent + orchestration engine
-|  |- src/agent.py          # Runtime entrypoint for the voice agent
-|  |- src/voca/             # Domain, orchestration, services, prompts
-|  |- tests/                # Backend orchestration tests
-|- frontend/                # Next.js voice UI + real-time metrics panels
-|- docs/                    # Implementation blueprint and notes
-|- start_app.sh             # Convenience startup script (Linux/macOS)
-|- run-frontend.cmd         # Frontend helper script (Windows)
-```
-
-## Architecture Overview
+## Architecture
 
 ### Backend
 
-Core backend modules live under `backend/src/voca/`:
+Main runtime entry:
 
-- `domain/`: enums, models, session state
-- `orchestration/`: intent routing, policy, memory, turn handling, response composition
-- `services/`: budget manager, fallbacks, telemetry
-- `demo/`: deterministic scenario engine for demos
-- `prompts/`: system + intent prompt building
-- `api/`: internal contracts and error types
+- backend/src/agent.py
 
-Entrypoint:
+Core modules:
 
-- `backend/src/agent.py`
+- backend/src/voca/orchestration: intent routing, policy decisions, slot filling, context memory, response composition
+- backend/src/voca/services: budget management, fallback fillers, telemetry, TTS helpers
+- backend/src/voca/domain: models, enums, and session contracts
+- backend/src/voca/prompts: system and intent prompt templates
+- backend/src/voca/demo: deterministic demo scenario logic
 
 ### Frontend
 
-Frontend modules live under `frontend/`:
+Main app:
 
-- `app/`: route layouts and app pages
-- `components/app/`: session UI, status, metrics, hints
-- `hooks/`: room lifecycle, metrics ingestion, connection health
-- `lib/`: contracts, session state helpers, telemetry utilities
+- frontend/app
 
-## Key Features
+Core modules:
 
-- Early response mode from partial STT (`confidence >= 0.72`)
-- Interruption preemption via speech handle interruption
-- Multilingual segmented output support
-- Dead-air filler prompts when response generation is delayed
-- Budget modes: `normal`, `near_limit`, `hard_limit`
-- Queue simulation and queue position publishing
-- Keepalive prompts before idle timeout
-- Session restoration after reconnect
-- Deterministic scenario engine for demo reliability
+- frontend/components/app: voice session UI, control bar, transcript, live metrics panel
+- frontend/hooks: room lifecycle, connection health, metrics ingestion, chat ingestion
+- frontend/lib: contracts, state helpers, telemetry utilities
+
+## Feature Highlights
+
+- Real-time conversational voice with low latency
+- Multilingual understanding and segmented response output
+- Human-like interruption behavior during agent speech
+- Early response mode from partial STT confidence signals
+- Dead-air filler phrases for long-response safety
+- Budget modes to compress output near usage limits
+- Queue simulation behavior for high-concurrency scenarios
+- Session restoration support after reconnect
+
+## Milestone Status
+
+- M3 complete: early response, interruption handling, multilingual segmentation, live data publishing
+- M4 complete: dead-air fillers, budget compression modes, queue simulation, smart suggestions, frontend indicators
+- M5 complete: websocket resilience, keepalive prompts, reconnect restoration paths
+
+Detailed implementation notes are available in:
+
+- SYSTEM_STATUS.md
+- docs/implementation-blueprint.md
+- docs/milestones/HANDOFF.md
+
+## Repository Layout
+
+```text
+voca-ai-voice-receptionist/
+|- backend/
+|  |- src/agent.py
+|  |- src/voca/
+|  |- tests/
+|- frontend/
+|  |- app/
+|  |- components/
+|  |- hooks/
+|  |- lib/
+|- docs/
+|- STARTUP.md
+|- SYSTEM_STATUS.md
+```
 
 ## Prerequisites
-
-### Required
 
 - Python 3.9+
 - Node.js 20+
 - npm or pnpm
-- LiveKit credentials
+- LiveKit project credentials
+- API keys for Deepgram, Gemini, and Murf
 
-### Common API Keys
+## Environment Variables
 
-Configured in backend env:
+### Backend
 
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-- `GOOGLE_API_KEY`
-- `MURF_API_KEY`
-- `DEEPGRAM_API_KEY`
+Copy backend/.env.example to backend/.env.local and set:
 
-Template file:
+- LIVEKIT_URL
+- LIVEKIT_API_KEY
+- LIVEKIT_API_SECRET
+- DEEPGRAM_API_KEY
+- GOOGLE_API_KEY
+- MURF_API_KEY
 
-- `backend/.env.example`
+### Frontend
 
-## Setup
+Create frontend/.env.local and set:
 
-### 1. Backend setup
+- LIVEKIT_URL
+- LIVEKIT_API_KEY
+- LIVEKIT_API_SECRET
+
+## Local Setup
+
+### 1) Backend
 
 ```bash
 cd backend
 uv sync
 ```
 
-Create env file and fill credentials:
-
-```bash
-cp .env.example .env.local
-```
-
-### 2. Frontend setup
+### 2) Frontend
 
 ```bash
 cd frontend
 npm install
 ```
 
-Create frontend env if missing and include LiveKit keys:
+## Run Locally
 
-```env
-LIVEKIT_API_KEY=...
-LIVEKIT_API_SECRET=...
-LIVEKIT_URL=...
-```
+Run in two terminals.
 
-## Running The Project
-
-### Option A: Run services manually (recommended on Windows)
-
-Terminal 1 (backend):
+Terminal A:
 
 ```bash
 cd backend
 uv run python src/agent.py dev
 ```
 
-Terminal 2 (frontend):
+Terminal B:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Open:
+Open http://localhost:3000 (or 3001 if 3000 is busy).
 
-- `http://localhost:3000`
-- If 3000 is busy, Next.js may start on 3001
+## Testing and Quality
 
-### Option B: Startup script (Linux/macOS)
-
-```bash
-./start_app.sh
-```
-
-## Testing
-
-Run backend tests:
+### Backend tests
 
 ```bash
 cd backend
 uv run pytest
 ```
 
-Run frontend lint/build:
+### Backend lint and format
+
+```bash
+cd backend
+uv run ruff check
+uv run ruff format
+```
+
+### Frontend lint and build
 
 ```bash
 cd frontend
@@ -179,68 +193,65 @@ npm run lint
 npm run build
 ```
 
-## Runtime Data Channels
+## Runtime Telemetry Channels
 
-Published by backend and consumed by frontend:
+Backend publishes data channels consumed by frontend:
 
-- `voca.metrics`
-	- average latency
-	- intent success rate
-	- budget usage
-	- budget mode
-- `voca.session`
+- voca.metrics
+	- avg_response_latency
+	- intent_success_rate
+	- budget_usage_percentage
+	- budget_mode
+- voca.session
 	- phase
 	- intent
-	- queue position
-	- restored-after-reconnect flag
+	- queue_position
+	- restored_after_disconnect
+- voca.chat
+	- role
+	- message
 
-## Important Config Defaults
+## Key Runtime Defaults
 
-Defined in `backend/src/voca/config.py`.
+Config source: backend/src/voca/config.py
 
-- Early response threshold: `0.72`
-- Dead-air threshold: `800ms`
-- Max concurrent sessions (queue simulation): `2`
-- Near budget limit ratio: `0.80`
-- Hard budget limit ratio: `0.95`
-- Idle timeout window: `180s`
+- partial_stt_confidence_threshold: 0.72
+- dead_air_threshold_ms: 800
+- max_concurrent_sessions: 2
+- ws_idle_timeout_seconds: 180
+- near_limit ratio: 0.80
+- hard_limit ratio: 0.95
 
 ## Troubleshooting
 
-### `LIVEKIT_URL is not defined` (frontend)
+### Frontend cannot connect to LiveKit
 
-Ensure frontend env includes:
+- Confirm frontend/.env.local has LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET.
+- Restart the frontend dev server after env changes.
 
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
+### Backend runs but no speech response
 
-### `pnpm` not found
+- Verify DEEPGRAM_API_KEY, GOOGLE_API_KEY, and MURF_API_KEY in backend/.env.local.
+- Check backend logs for provider auth or quota errors.
 
-Use npm instead:
+### Port conflicts
 
-```bash
-npm run dev
-```
+- Next.js typically switches from 3000 to 3001 automatically.
 
-### Port 3000 in use
+### uv command not found
 
-Next.js auto-falls back to 3001. Open that URL.
+- Install uv, then rerun backend setup commands.
 
-### Backend starts but no voice session appears
+## Product Positioning
 
-Check:
+Voca is not a demo bot. It is a scalable AI receptionist platform for real businesses that need instant, natural, and always-on voice interactions across languages and customer intents.
 
-- LiveKit credentials
-- Internet access to LiveKit service
-- STT/LLM/TTS API keys in `backend/.env.local`
+## Builder
 
-## Development Notes
+Mohan Prasath P
 
-- Backend dependency management uses `uv`
-- Frontend is Next.js App Router based
-- The project includes multiple milestone docs with implementation details
+AI systems builder focused on real-time conversational infrastructure, product reliability, and production deployment readiness.
 
 ## License
 
-MIT. See `LICENSE`.
+MIT License. See LICENSE.
