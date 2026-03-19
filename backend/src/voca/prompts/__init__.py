@@ -1,3 +1,3 @@
-from voca.prompts.system_prompt import VOCA_SYSTEM_PROMPT
+from voca.prompts.system_prompt import get_dynamic_system_prompt
 
-__all__ = ["VOCA_SYSTEM_PROMPT"]
+__all__ = ["get_dynamic_system_prompt"]

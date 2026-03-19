@@ -25,10 +25,10 @@ vec3 permute(vec3 x) {
   return mod(((x * 34.0) + 1.0) * x, 289.0);
 }
 
-float snoise(vec2 v){
+float snoise(vec2 v) {
   const vec4 C = vec4(
-      0.211324865405187, 0.366025403784439,
-      -0.577350269189626, 0.024390243902439
+    0.211324865405187, 0.366025403784439,
+    -0.577350269189626, 0.024390243902439
   );
   vec2 i  = floor(v + dot(v, C.yy));
   vec2 x0 = v - i + dot(i, C.xx);
@@ -36,29 +36,20 @@ float snoise(vec2 v){
   vec4 x12 = x0.xyxy + C.xxzz;
   x12.xy -= i1;
   i = mod(i, 289.0);
-
   vec3 p = permute(
-      permute(i.y + vec3(0.0, i1.y, 1.0))
-    + i.x + vec3(0.0, i1.x, 1.0)
+    permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0)
   );
-
   vec3 m = max(
-      0.5 - vec3(
-          dot(x0, x0),
-          dot(x12.xy, x12.xy),
-          dot(x12.zw, x12.zw)
-      ),
-      0.0
+    0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)),
+    0.0
   );
   m = m * m;
   m = m * m;
-
-  vec3 x = 2.0 * fract(p * C.www) - 1.0;
-  vec3 h = abs(x) - 0.5;
+  vec3 x  = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h  = abs(x) - 0.5;
   vec3 ox = floor(x + 0.5);
   vec3 a0 = x - ox;
-  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-
+  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
   vec3 g;
   g.x  = a0.x  * x0.x  + h.x  * x0.y;
   g.yz = a0.yz * x12.xz + h.yz * x12.yw;
@@ -66,22 +57,22 @@ float snoise(vec2 v){
 }
 
 struct ColorStop {
-  vec3 color;
+  vec3  color;
   float position;
 };
 
-#define COLOR_RAMP(colors, factor, finalColor) {              \
-  int index = 0;                                               \
-  for (int i = 0; i < 2; i++) {                                \
-     ColorStop currentColor = colors[i];                       \
-     bool isInBetween = currentColor.position <= factor;       \
-     index = int(mix(float(index), float(i), float(isInBetween))); \
-  }                                                             \
-  ColorStop currentColor = colors[index];                      \
-  ColorStop nextColor = colors[index + 1];                     \
-  float range = nextColor.position - currentColor.position;    \
-  float lerpFactor = (factor - currentColor.position) / range; \
-  finalColor = mix(currentColor.color, nextColor.color, lerpFactor); \
+#define COLOR_RAMP(colors, factor, finalColor) {                              \
+  int index = 0;                                                               \
+  for (int i = 0; i < 2; i++) {                                                \
+    ColorStop cc = colors[i];                                                   \
+    bool inBetween = cc.position <= factor;                                     \
+    index = int(mix(float(index), float(i), float(inBetween)));                \
+  }                                                                             \
+  ColorStop cur  = colors[index];                                               \
+  ColorStop next = colors[index + 1];                                           \
+  float range      = next.position - cur.position;                              \
+  float lerpFactor = (factor - cur.position) / range;                          \
+  finalColor = mix(cur.color, next.color, lerpFactor);                         \
 }
 
 void main() {
@@ -95,16 +86,15 @@ void main() {
   vec3 rampColor;
   COLOR_RAMP(colors, uv.x, rampColor);
 
-  float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
-  height = exp(height);
-  height = (uv.y * 2.0 - height + 0.2);
-  float intensity = 1.2 * height;
+  float height    = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
+  height          = exp(height);
+  height          = uv.y * 2.0 - height + 0.2;
+  float intensity = 1.4 * height;
 
-  float midPoint = 0.15;
+  float midPoint   = 0.12;
   float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
 
   vec3 auroraColor = intensity * rampColor;
-
   fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
 }
 `;
@@ -120,11 +110,12 @@ interface AuroraProps {
 
 export function Aurora(props: AuroraProps) {
   const {
-    colorStops = ['#5227FF', '#7cff67', '#5227FF'],
-    amplitude = 1.0,
-    blend = 0.5,
+    colorStops = ['#06b6d4', '#3b82f6', '#7c3aed'],
+    amplitude  = 1.0,
+    blend      = 0.5,
     className,
   } = props;
+
   const propsRef = useRef<AuroraProps>(props);
   propsRef.current = props;
 
@@ -134,91 +125,81 @@ export function Aurora(props: AuroraProps) {
     const ctn = ctnDom.current;
     if (!ctn) return;
 
-    const renderer = new Renderer({
-      alpha: true,
-      premultipliedAlpha: false,
-      antialias: true,
-    });
+    const renderer = new Renderer({ alpha: true, premultipliedAlpha: false, antialias: true });
     const gl = renderer.gl;
+
+    // Make canvas sit behind everything, fill viewport
+    const canvas = gl.canvas as HTMLCanvasElement;
+    canvas.style.position  = 'fixed';
+    canvas.style.inset     = '0';
+    canvas.style.width     = '100vw';
+    canvas.style.height    = '100vh';
+    canvas.style.zIndex    = '-10';
+    canvas.style.pointerEvents = 'none';
+
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.canvas.style.backgroundColor = 'transparent';
 
-    const colorStopsArray = colorStops.map((hex) => {
+    const toRGB = (hex: string) => {
       const c = new Color(hex);
       return [c.r, c.g, c.b];
-    });
+    };
 
     const program = new Program(gl, {
-      vertex: VERT,
+      vertex:   VERT,
       fragment: FRAG,
       uniforms: {
-        uTime: { value: 0 },
-        uAmplitude: { value: amplitude },
-        uColorStops: { value: colorStopsArray },
-        uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
-        uBlend: { value: blend },
+        uTime:       { value: 0 },
+        uAmplitude:  { value: amplitude },
+        uColorStops: { value: colorStops.map(toRGB) },
+        uResolution: { value: [window.innerWidth, window.innerHeight] },
+        uBlend:      { value: blend },
       },
     });
 
     function resize() {
-      if (!ctn) return;
-      const width = ctn.offsetWidth;
-      const height = ctn.offsetHeight;
-      renderer.setSize(width, height);
-      program.uniforms.uResolution.value = [width, height];
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      renderer.setSize(w, h);
+      program.uniforms.uResolution.value = [w, h];
     }
+
     window.addEventListener('resize', resize);
+    resize(); // initial size using window dimensions (always correct)
 
     const geometry = new Triangle(gl);
-    if (geometry.attributes.uv) {
-      delete geometry.attributes.uv;
-    }
+    if (geometry.attributes.uv) delete geometry.attributes.uv;
 
     const mesh = new Mesh(gl, { geometry, program });
-    ctn.appendChild(gl.canvas);
-    gl.canvas.style.position = 'absolute';
-    gl.canvas.style.top = '0';
-    gl.canvas.style.left = '0';
-    gl.canvas.style.width = '100%';
-    gl.canvas.style.height = '100%';
+
+    // Append to document.body so it's truly global, not clipped by any parent
+    document.body.appendChild(canvas);
 
     let animateId = 0;
     const update = (t: number) => {
       animateId = requestAnimationFrame(update);
       const { time = t * 0.01, speed = 1.0 } = propsRef.current;
-      program.uniforms.uTime.value = time * speed * 0.1;
-      program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? 1.0;
-      program.uniforms.uBlend.value = propsRef.current.blend ?? blend;
-      const stops = propsRef.current.colorStops ?? colorStops;
-      program.uniforms.uColorStops.value = stops.map((hex: string) => {
-        const c = new Color(hex);
-        return [c.r, c.g, c.b];
-      });
+      program.uniforms.uTime.value      = time * speed * 0.1;
+      program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? amplitude;
+      program.uniforms.uBlend.value     = propsRef.current.blend ?? blend;
+      program.uniforms.uColorStops.value =
+        (propsRef.current.colorStops ?? colorStops).map(toRGB);
       renderer.render({ scene: mesh });
     };
     animateId = requestAnimationFrame(update);
 
-    resize();
-
     return () => {
       cancelAnimationFrame(animateId);
       window.removeEventListener('resize', resize);
-      if (ctn && gl.canvas.parentNode === ctn) {
-        ctn.removeChild(gl.canvas);
-      }
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
-  }, [amplitude, blend, colorStops]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return (
-    <div
-      ref={ctnDom}
-      className={className ?? 'h-full w-full'}
-      style={{ position: 'relative', overflow: 'hidden' }}
-    />
-  );
+  // The div is just a mount anchor — the canvas goes directly onto body
+  return <div ref={ctnDom} className={className ?? ''} style={{ display: 'none' }} />;
 }
 
 export default Aurora;
