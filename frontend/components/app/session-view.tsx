@@ -4,32 +4,28 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRoomContext } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
+import { BudgetIndicator } from '@/components/app/budget-indicator';
 import { ConnectionIndicator } from '@/components/app/connection-indicator';
+import { InterruptHint } from '@/components/app/interrupt-hint';
+import { LatencyDebugPanel } from '@/components/app/latency-debug-panel';
+import { LiveMetricsPanel } from '@/components/app/live-metrics-panel';
+import { QueuePositionIndicator } from '@/components/app/queue-position-indicator';
+import { useSession } from '@/components/app/session-provider';
 import { TranscriptView } from '@/components/app/transcript-view';
 import { VoiceControlBar } from '@/components/app/voice-control-bar';
 import { VoiceOrb } from '@/components/app/voice-orb';
 import { VoiceStatusPill } from '@/components/app/voice-status-pill';
-import { BudgetIndicator } from '@/components/app/budget-indicator';
-import { LiveMetricsPanel } from '@/components/app/live-metrics-panel';
-import { InterruptHint } from '@/components/app/interrupt-hint';
-import { QueuePositionIndicator } from '@/components/app/queue-position-indicator';
-import { LatencyDebugPanel } from '@/components/app/latency-debug-panel';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
-import { useVoiceSessionState } from '@/hooks/useVoiceSessionState';
 import { useLiveMetrics } from '@/hooks/useLiveMetrics';
-import { useSession } from '@/components/app/session-provider';
+import { useVoiceSessionState } from '@/hooks/useVoiceSessionState';
 
 interface SessionViewProps {
   appConfig: AppConfig;
   onAnimationComplete?: () => void;
 }
 
-export const SessionView = ({
-  appConfig,
-  onAnimationComplete,
-  ...props
-}: React.ComponentProps<'section'> & SessionViewProps) => {
+export const SessionView = ({ ...props }: React.ComponentProps<'section'> & SessionViewProps) => {
   useConnectionTimeout(200_000);
 
   const [chatOpen, setChatOpen] = useState(false);

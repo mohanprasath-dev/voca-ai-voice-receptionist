@@ -51,8 +51,8 @@ export const WelcomeView = ({
           transition={{ delay: 0.1 }}
           className="mt-6 text-lg leading-relaxed text-white/70"
         >
-          Talk naturally. Interrupt anytime. Voca listens, thinks, and responds with production-grade
-          latency.
+          Talk naturally. Interrupt anytime. Voca listens, thinks, and responds with
+          production-grade latency.
         </motion.p>
 
         <motion.div

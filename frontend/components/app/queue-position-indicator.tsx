@@ -21,4 +21,3 @@ export function QueuePositionIndicator({ queuePosition, className }: QueuePositi
     </div>
   );
 }
-

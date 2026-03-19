@@ -1,11 +1,12 @@
 import React from 'react';
-import { HTMLMotionProps, motion } from 'motion/react';
+import { type MotionProps, motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
-interface GlassButtonProps extends HTMLMotionProps<'button'> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg' | 'icon';
-}
+type GlassButtonProps = React.ComponentPropsWithoutRef<'button'> &
+  MotionProps & {
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+    size?: 'sm' | 'md' | 'lg' | 'icon';
+  };
 
 export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(
   ({ className, children, variant = 'primary', size = 'md', ...props }, ref) => {

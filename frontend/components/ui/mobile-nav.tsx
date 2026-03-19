@@ -9,9 +9,8 @@ import { Button } from './button';
 import { Sheet, SheetContent, SheetTrigger } from './sheet';
 
 const NAV_LINKS = [
-  { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
-  { name: 'Features', href: '/#features' },
+  { name: 'Dashboard', href: '/dashboard' },
 ];
 
 export function MobileNav() {

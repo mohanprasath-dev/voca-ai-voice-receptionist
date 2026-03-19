@@ -12,14 +12,11 @@ interface LiveMetricsPanelProps {
 
 export function LiveMetricsPanel({ metrics, className }: LiveMetricsPanelProps) {
   return (
-    <div
-      className={cn(
-        'glass w-full max-w-sm rounded-2xl p-4',
-        className
-      )}
-    >
+    <div className={cn('glass w-full max-w-sm rounded-2xl p-4', className)}>
       <div className="flex items-center justify-between">
-        <div className="text-[10px] font-black tracking-widest text-white/60 uppercase">Live metrics</div>
+        <div className="text-[10px] font-black tracking-widest text-white/60 uppercase">
+          Live metrics
+        </div>
         <div
           className={cn(
             'rounded-full px-2 py-1 text-[10px] font-black tracking-widest uppercase',
@@ -35,7 +32,9 @@ export function LiveMetricsPanel({ metrics, className }: LiveMetricsPanelProps) 
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 shadow-[0_0_40px_rgba(34,211,238,0.06)]">
-          <div className="text-[10px] font-bold tracking-widest text-white/40 uppercase">Avg latency</div>
+          <div className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
+            Avg latency
+          </div>
           <motion.div
             key={Math.round(metrics.avgResponseLatencyMs)}
             initial={{ opacity: 0, y: 6, filter: 'blur(6px)' }}
@@ -47,7 +46,9 @@ export function LiveMetricsPanel({ metrics, className }: LiveMetricsPanelProps) 
           </motion.div>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3 shadow-[0_0_40px_rgba(99,102,241,0.06)]">
-          <div className="text-[10px] font-bold tracking-widest text-white/40 uppercase">Intent hit</div>
+          <div className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
+            Intent hit
+          </div>
           <div className="mt-1 flex items-baseline gap-2">
             <motion.div
               key={Math.round((metrics.intentSuccessRate ?? 0) * 100)}
@@ -75,4 +76,3 @@ export function LiveMetricsPanel({ metrics, className }: LiveMetricsPanelProps) 
     </div>
   );
 }
-

@@ -1,11 +1,12 @@
 import React from 'react';
-import { HTMLMotionProps, motion } from 'motion/react';
+import { type MotionProps, motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
-interface GlassCardProps extends HTMLMotionProps<'div'> {
-  glowColor?: string;
-  intensity?: 'low' | 'medium' | 'high';
-}
+type GlassCardProps = React.ComponentPropsWithoutRef<'div'> &
+  MotionProps & {
+    glowColor?: string;
+    intensity?: 'low' | 'medium' | 'high';
+  };
 
 export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
   ({ className, children, glowColor, intensity = 'medium', ...props }, ref) => {

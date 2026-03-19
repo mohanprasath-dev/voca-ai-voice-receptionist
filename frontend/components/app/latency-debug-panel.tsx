@@ -28,4 +28,3 @@ export function LatencyDebugPanel({ metrics, className }: LatencyDebugPanelProps
     </div>
   );
 }
-

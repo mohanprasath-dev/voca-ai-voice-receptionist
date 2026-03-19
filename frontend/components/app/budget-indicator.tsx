@@ -21,14 +21,14 @@ export function BudgetIndicator({ metrics, className }: BudgetIndicatorProps) {
 
   return (
     <div
-      className={cn(
-        'glass flex items-center gap-3 rounded-full px-4 py-2',
-        className
-      )}
+      className={cn('glass flex items-center gap-3 rounded-full px-4 py-2', className)}
       aria-label="Budget usage"
     >
       <div className="h-2 w-28 overflow-hidden rounded-full bg-white/10">
-        <div className={cn('h-full rounded-full transition-all duration-300', color)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn('h-full rounded-full transition-all duration-300', color)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <div className="text-[10px] font-black tracking-widest text-white/70 uppercase">
         {mode.replace('_', ' ')} · {Math.round(pct)}%
@@ -36,4 +36,3 @@ export function BudgetIndicator({ metrics, className }: BudgetIndicatorProps) {
     </div>
   );
 }
-

@@ -27,10 +27,23 @@ interface SessionProviderProps {
 }
 
 export const SessionProvider = ({ appConfig, children }: SessionProviderProps) => {
-  const { room, isSessionActive, startSession, endSession, queuePosition, restoredAfterDisconnect } =
-    useRoom(appConfig);
+  const {
+    room,
+    isSessionActive,
+    startSession,
+    endSession,
+    queuePosition,
+    restoredAfterDisconnect,
+  } = useRoom(appConfig);
   const contextValue = useMemo(
-    () => ({ appConfig, isSessionActive, startSession, endSession, queuePosition, restoredAfterDisconnect }),
+    () => ({
+      appConfig,
+      isSessionActive,
+      startSession,
+      endSession,
+      queuePosition,
+      restoredAfterDisconnect,
+    }),
     [appConfig, isSessionActive, startSession, endSession, queuePosition, restoredAfterDisconnect]
   );
 

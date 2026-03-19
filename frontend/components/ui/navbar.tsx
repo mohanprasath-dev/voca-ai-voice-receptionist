@@ -4,26 +4,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Container } from './container';
-import { GlassButton } from './glass-button';
 import { MobileNav } from './mobile-nav';
 
 const NAV_LINKS = [
-  { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
-  { name: 'Features', href: '/#features' },
+  { name: 'Dashboard', href: '/dashboard' },
 ];
 
 export const Navbar = () => {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-[100] border-b border-white/5 bg-black/25 backdrop-blur-2xl">
+    <nav className="fixed top-0 right-0 left-0 z-[100] bg-transparent backdrop-blur-sm">
       <Container>
         <div className="flex h-20 items-center justify-between">
           <Link href="/" className="group flex items-center">
-            <span className="text-gradient-ai text-[17px] font-semibold tracking-[0.12em] uppercase text-white/95">
-              Voca
-            </span>
+            <span className="text-[14px] font-extrabold tracking-[0.28em] text-white">VOCA</span>
           </Link>
 
           <div className="hidden items-center gap-8 md:flex">
@@ -32,8 +28,8 @@ export const Navbar = () => {
                 key={link.name}
                 href={link.href}
                 className={cn(
-                  'text-sm font-medium tracking-wide transition-colors hover:text-white',
-                  pathname === link.href ? 'text-white' : 'text-white/60'
+                  'text-sm font-medium tracking-wide text-white/70 transition-colors hover:text-white',
+                  pathname === link.href ? 'text-white' : ''
                 )}
               >
                 {link.name}
@@ -42,11 +38,6 @@ export const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/demo">
-              <GlassButton variant="primary" size="sm" className="px-5">
-                Try Demo
-              </GlassButton>
-            </Link>
             <MobileNav />
           </div>
         </div>

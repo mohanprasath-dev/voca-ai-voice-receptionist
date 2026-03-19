@@ -21,4 +21,3 @@ export function InterruptHint({ show, className }: InterruptHintProps) {
     </div>
   );
 }
-
