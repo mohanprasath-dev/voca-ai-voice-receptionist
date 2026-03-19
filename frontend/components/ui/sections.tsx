@@ -48,7 +48,7 @@ export const Features = () => {
       <Container>
         <div className="text-center">
           <motion.h2
-            className="bg-gradient-to-br from-white to-white/60 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl lg:text-6xl"
+            className="bg-linear-to-br from-white to-white/60 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl lg:text-6xl"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -110,7 +110,7 @@ export const CTASection = () => {
           <div className="relative z-10 mx-auto max-w-3xl text-center">
             <h2 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl">
               Ready to{' '}
-              <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                 Revolutionize
               </span>{' '}
               Your CX?
@@ -137,8 +137,8 @@ export const CTASection = () => {
             </div>
           </div>
           <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden mix-blend-screen">
-            <div className="bg-primary/40 absolute -top-[50%] -left-[20%] h-[800px] w-[800px] rounded-full blur-[150px]" />
-            <div className="absolute -right-[20%] -bottom-[50%] h-[800px] w-[800px] rounded-full bg-blue-500/30 blur-[150px]" />
+            <div className="bg-primary/40 absolute -top-[50%] -left-[20%] h-200 w-200 rounded-full blur-[150px]" />
+            <div className="absolute -right-[20%] -bottom-[50%] h-200 w-200 rounded-full bg-blue-500/30 blur-[150px]" />
           </div>
         </GlassCard>
       </Container>

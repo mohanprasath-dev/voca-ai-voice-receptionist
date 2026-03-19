@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from 'react';
+import Image from 'next/image';
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import * as Icons from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -170,10 +171,10 @@ export function Lanyard({
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
         whileHover={{ scale: 1.02 }}
-        className="relative w-full max-w-[340px]"
+        className="relative w-full max-w-85"
       >
         <div
-          className="absolute inset-0 rounded-[2rem]"
+          className="absolute inset-0 rounded-4xl"
           style={{
             boxShadow: '0 50px 100px rgba(0,0,0,0.7), 0 20px 40px rgba(0,0,0,0.5)',
             transform: 'translateZ(-20px) scale(0.95)',
@@ -182,11 +183,11 @@ export function Lanyard({
           }}
         />
 
-        <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-gradient-to-br from-[#0f1117] via-[#0d1020] to-[#080b14]">
-          <div className="h-1.5 w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600" />
+        <div className="relative overflow-hidden rounded-4xl border border-white/8 bg-linear-to-br from-[#0f1117] via-[#0d1020] to-[#080b14]">
+          <div className="h-1.5 w-full bg-linear-to-r from-cyan-500 via-blue-500 to-purple-600" />
 
           <motion.div
-            className="pointer-events-none absolute inset-0 rounded-[2rem] opacity-0 transition-opacity duration-300 hover:opacity-100"
+            className="pointer-events-none absolute inset-0 rounded-4xl opacity-0 transition-opacity duration-300 hover:opacity-100"
             style={{
               background: useTransform(
                 [shineX, shineY],
@@ -196,12 +197,12 @@ export function Lanyard({
             }}
           />
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
 
           <div className="p-7">
             <div className="mb-7 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(34,211,238,0.4)]">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 shadow-[0_0_16px_rgba(34,211,238,0.4)]">
                   <span className="text-[12px] font-black text-white">V</span>
                 </div>
                 <span className="text-[11px] font-black tracking-[0.3em] text-white/60 uppercase">
@@ -218,14 +219,21 @@ export function Lanyard({
 
             <div className="mb-7 flex items-center gap-4">
               <div className="relative shrink-0">
-                <div className="flex size-[60px] items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/20 to-blue-600/20">
+                <div className="flex size-15 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-linear-to-br from-cyan-500/20 to-blue-600/20">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
+                    <Image
+                      src={avatarUrl}
+                      alt={name}
+                      width={60}
+                      height={60}
+                      unoptimized
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <Icons.UserIcon size={26} weight="duotone" className="text-cyan-400" />
                   )}
                 </div>
-                <div className="absolute -right-1 -bottom-1 size-3.5 rounded-full border-[2px] border-[#0d1020] bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                <div className="absolute -right-1 -bottom-1 size-3.5 rounded-full border-2 border-[#0d1020] bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
               </div>
               <div className="min-w-0">
                 <h3 className="truncate text-[18px] leading-tight font-black tracking-tight text-white">
@@ -237,7 +245,7 @@ export function Lanyard({
               </div>
             </div>
 
-            <div className="mb-6 h-px w-full bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+            <div className="mb-6 h-px w-full bg-linear-to-r from-transparent via-white/8 to-transparent" />
 
             <div className="flex items-center gap-2">
               {socials?.github && (
@@ -246,7 +254,7 @@ export function Lanyard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="group flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2 transition-all duration-200 hover:border-white/10 hover:bg-white/[0.08]"
+                  className="group flex items-center gap-1.5 rounded-xl border border-white/6 bg-white/4 px-3 py-2 transition-all duration-200 hover:border-white/10 hover:bg-white/8"
                 >
                   <Icons.GithubLogoIcon
                     size={13}
@@ -264,7 +272,7 @@ export function Lanyard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="group flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2 transition-all duration-200 hover:border-white/10 hover:bg-white/[0.08]"
+                  className="group flex items-center gap-1.5 rounded-xl border border-white/6 bg-white/4 px-3 py-2 transition-all duration-200 hover:border-white/10 hover:bg-white/8"
                 >
                   <Icons.LinkedinLogoIcon
                     size={13}
@@ -282,7 +290,7 @@ export function Lanyard({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="group flex items-center gap-1.5 rounded-xl border border-white/[0.06] bg-white/[0.04] px-3 py-2 transition-all duration-200 hover:border-white/10 hover:bg-white/[0.08]"
+                  className="group flex items-center gap-1.5 rounded-xl border border-white/6 bg-white/4 px-3 py-2 transition-all duration-200 hover:border-white/10 hover:bg-white/8"
                 >
                   <Icons.GlobeIcon
                     size={13}
@@ -297,7 +305,7 @@ export function Lanyard({
             </div>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/[0.04] bg-white/[0.02] px-7 py-3">
+          <div className="flex items-center justify-between border-t border-white/4 bg-white/2 px-7 py-3">
             <span className="text-[8px] font-bold tracking-[0.4em] text-white/15 uppercase">
               ID · VOCA · 2026
             </span>

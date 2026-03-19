@@ -84,7 +84,7 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onToggle}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-60"
             />
             
             <motion.div
@@ -92,7 +92,7 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 400 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-[#080808] border-l border-white/5 z-[70] shadow-2xl flex flex-col"
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-[#080808] border-l border-white/5 z-70 shadow-2xl flex flex-col"
             >
               {/* Header */}
               <div className="flex items-center justify-between p-8 border-b border-white/5">

@@ -48,8 +48,8 @@ export default function AboutPage() {
       <main>
         <section className="relative z-10 w-full pt-48 pb-20 overflow-hidden">
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-125 h-125 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-125 h-125 bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none" />
 
           <Container>
             <div className="mx-auto max-w-4xl text-center">

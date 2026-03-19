@@ -86,7 +86,7 @@ export function VoiceControlBar({
         size="md"
         onClick={handleDisconnect}
         disabled={!isSessionActive}
-        className="h-12 min-w-[120px] flex-1 rounded-full text-[11px] font-black tracking-widest uppercase md:text-xs"
+        className="h-12 min-w-30 flex-1 rounded-full text-[11px] font-black tracking-widest uppercase md:text-xs"
       >
         <PhoneDisconnectIcon weight="bold" className="size-4" />
         Stop

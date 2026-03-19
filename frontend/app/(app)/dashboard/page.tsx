@@ -65,7 +65,7 @@ export default function DashboardPage() {
               ].map((agent, i) => (
                 <div key={agent.name} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center">
+                    <div className="size-10 rounded-full bg-linear-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center">
                       <Icons.UsersIcon size={18} className="text-cyan-400" weight="duotone" />
                     </div>
                     <div>
@@ -84,7 +84,7 @@ export default function DashboardPage() {
 
           {/* System Health */}
           <div className="space-y-8">
-            <SpotlightCard className="p-8 bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20 h-full">
+            <SpotlightCard className="p-8 bg-linear-to-br from-cyan-500/10 to-transparent border-cyan-500/20 h-full">
               <h3 className="text-lg font-black mb-6">Service Health</h3>
               <div className="space-y-6">
                 {[

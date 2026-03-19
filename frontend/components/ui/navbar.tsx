@@ -17,7 +17,7 @@ export const Navbar = () => {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-5 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-white/10 bg-black/60 shadow-[0_0_40px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
+    <nav className="fixed top-5 left-1/2 z-100 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 shadow-[0_0_40px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
       <div className="flex items-center gap-1 px-2 py-2">
         <Link href="/">
           <span className="px-3 text-[13px] font-black tracking-[0.25em] text-white">VOCA</span>

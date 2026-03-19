@@ -27,7 +27,7 @@ export function MobileNav() {
           <span className="sr-only">Toggle Menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent position="left" className="w-[300px] border-r border-white/5 bg-[#030303]/90 backdrop-blur-2xl p-8">
+      <SheetContent position="left" className="w-75 border-r border-white/5 bg-[#030303]/90 backdrop-blur-2xl p-8">
         <Link href="/" className="mb-12 flex items-center" onClick={() => setOpen(false)}>
           <span className="text-[14px] font-black tracking-[0.2em] text-white uppercase">VOCA</span>
         </Link>
@@ -38,7 +38,7 @@ export function MobileNav() {
               href={link.href}
               onClick={() => setOpen(false)}
               className={cn(
-                'text-lg font-bold tracking-[0.1em] uppercase transition-colors',
+                'text-lg font-bold tracking-widest uppercase transition-colors',
                 pathname === link.href ? 'text-cyan-400' : 'text-white/40 hover:text-white'
               )}
             >

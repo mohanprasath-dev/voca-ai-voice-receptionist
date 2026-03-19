@@ -13,7 +13,7 @@ export const Hero = () => {
   const containerRef = useRef(null);
 
   return (
-    <section ref={containerRef} className="relative flex min-h-[100svh] items-center justify-center px-6 pt-24 pb-24 overflow-hidden">
+    <section ref={containerRef} className="relative flex min-h-svh items-center justify-center px-6 pt-24 pb-24 overflow-hidden">
       {/* Background decoration */}
       <div className="absolute top-1/4 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />

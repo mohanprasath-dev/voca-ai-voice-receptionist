@@ -74,7 +74,7 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
   return (
     <section
       ref={containerRef}
-      className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-transparent font-sans selection:bg-cyan-500/30"
+      className="relative flex h-dvh w-full flex-col overflow-hidden bg-transparent font-sans selection:bg-cyan-500/30"
       {...props}
     >
       {/* Background Glows */}
@@ -87,10 +87,10 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
             y: phase === 'listening' ? '-50%' : '-50%',
           }}
           transition={{ duration: 1.5, ease: 'easeInOut' }}
-          className="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/20 blur-[150px]"
+          className="absolute top-1/2 left-1/2 h-200 w-200 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/20 blur-[150px]"
         />
-        <div className="absolute top-[-10%] right-[-10%] h-[400px] w-[400px] rounded-full bg-blue-600/10 blur-[100px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] h-[400px] w-[400px] rounded-full bg-indigo-600/10 blur-[100px]" />
+        <div className="absolute top-[-10%] right-[-10%] h-100 w-100 rounded-full bg-blue-600/10 blur-[100px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] h-100 w-100 rounded-full bg-indigo-600/10 blur-[100px]" />
       </div>
 
       {/* Top Navigation / State */}
