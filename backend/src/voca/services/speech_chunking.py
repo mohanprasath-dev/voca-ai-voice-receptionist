@@ -2,8 +2,15 @@ import random
 import re
 from typing import Iterator
 
-CONNECTOR_PATTERN = re.compile(r"\b(and|but|so|because|then)\b", re.IGNORECASE)
-FILLERS = ("Alright...", "Okay...", "Hmm...", "Let me check...", "uh...")
+CONNECTOR_PATTERN = re.compile(
+    r"\b(and|but|so|because|then|और|लेकिन|तो|क्योंकि|பின்னர்|ஆனால்|மற்றும்)\b",
+    re.IGNORECASE | re.UNICODE
+)
+FILLERS = (
+    "Alright...", "Okay...", "Hmm...", "Let me check...", "uh...",
+    "ठीक है...", "देखती हूँ...", "हाँ...",
+    "சரி...", "பார்க்கிறேன்...", "ஒரு கணம்..."
+)
 EMPHASIS_KEYWORDS = {
     "confirmed",
     "appointment",
@@ -13,6 +20,10 @@ EMPHASIS_KEYWORDS = {
     "available",
     "booking",
     "scheduled",
+    # Hindi
+    "कल", "आज", "अपॉइंटमेंट", "बुकिंग", "तत्काल",
+    # Tamil
+    "நாளை", "இன்று", "நியமனம்", "அவசரம்",
 }
 
 
@@ -61,10 +72,10 @@ def pause_after_chunk_ms(previous_chunk: str, rng: random.Random) -> int:
         return 250
 
     if stripped.endswith(","):
-        return 140
+        return 200
 
     if stripped.endswith((".", "?", "!", "...")):
-        return rng.randint(220, 380)
+        return rng.randint(300, 500)
 
     return 180
 
@@ -79,21 +90,39 @@ def apply_moderate_emphasis(text: str) -> str:
     return re.sub(r"\b\w+\b", _replace, text, count=1)
 
 
-def inject_disfluency(text: str, rng: random.Random, probability: float = 0.25) -> str:
+def inject_disfluency(text: str, rng: random.Random, probability: float = 0.15) -> str:
+    """Inject natural spoken fillers. Reduced probability for cleaner output."""
     if not text.strip():
         return text
 
     lowered = text.lower()
-    if lowered.startswith(("alright", "okay", "hmm", "let me check", "uh")):
+    # Skip if already starts with a filler (English or multilingual)
+    filler_starts = (
+        "alright", "okay", "hmm", "let me check", "uh",
+        "ठीक", "देखती", "हाँ",
+        "சரி", "பார்க்கிறேன்", "ஒரு"
+    )
+    if any(lowered.startswith(f) for f in filler_starts):
         return text
 
     if rng.random() >= probability:
         return text
 
-    filler = rng.choice(FILLERS)
+    # Detect language from script to pick appropriate filler
+    has_devanagari = any('\u0900' <= c <= '\u097f' for c in text)
+    has_tamil = any('\u0b80' <= c <= '\u0bff' for c in text)
+
+    if has_devanagari:
+        fillers = ("ठीक है...", "देखती हूँ...", "हाँ...")
+    elif has_tamil:
+        fillers = ("சரி...", "பார்க்கிறேன்...", "ஒரு கணம்...")
+    else:
+        fillers = ("Alright...", "Okay...", "Hmm...")
+
+    filler = rng.choice(fillers)
     return f"{filler} {text}".strip()
 
 
 def humanize_chunk(text: str, rng: random.Random) -> str:
     emphasized = apply_moderate_emphasis(text)
-    return inject_disfluency(emphasized, rng)
+    return inject_disfluency(emphasized, rng, probability=0.15)

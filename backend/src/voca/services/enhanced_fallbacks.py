@@ -91,15 +91,18 @@ class MultilingualFallbackService:
                 "मैं आपके लिए देखती हूँ...",
                 "कृपया एक क्षण इंतजार करें...",
                 "हम्म... देखती हूँ...",
-                "ठीक है... एक सेकंड दीजिए..."
+                "ठीक है... एक सेकंड..."
             ],
             "ta": [
                 "ஒரு கணம்...",
                 "நான் உங்களுக்கு பார்க்கிறேன்...",
                 "தயவுசெய்து ஒரு கணம் காத்திருங்கள்...",
                 "ஹம்ம்... பார்க்கிறேன்...",
-                "சரி... ஒரு விநாடியாவது..."
-            ]
+                "சரி... ஒரு நிமிடம்..."
+            ],
+            "es": ["Un momento...", "Déjame verificar...", "Un segundo por favor..."],
+            "fr": ["Un instant...", "Laissez-moi vérifier...", "Une seconde s'il vous plaît..."],
+            "de": ["Einen Moment...", "Ich schaue nach...", "Einen Augenblick bitte..."],
         }
     
     def get_fallback_message(self, fallback_type: FallbackType, language: str = "en") -> str:

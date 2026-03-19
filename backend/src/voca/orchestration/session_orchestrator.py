@@ -1,5 +1,5 @@
 from time import time
-from typing import Optional
+from typing import Optional, Dict, Any
 import logging
 
 from voca.api.contracts import (
@@ -52,6 +52,13 @@ class SessionOrchestrator:
         self.turn_manager = turn_manager or TurnManager(config)
         self.config = config
         self._last_activity_ms: dict[str, int] = {}
+        self._agent_config: Dict[str, Any] = {}
+
+    def set_agent_config(self, config: Dict[str, Any]) -> None:
+        """Store agent configuration for language-aware responses."""
+        self._agent_config = config
+        # Update response composer language context if possible
+        logger.info(f"Agent config set: language={config.get('language', 'en')}, role={config.get('role', 'receptionist')}")
 
     def handle_turn(self, turn: TurnInput) -> TurnOutput:
         started = time()
@@ -96,7 +103,13 @@ class SessionOrchestrator:
         )
 
         if budget_mode == BudgetMode.HARD_LIMIT:
-            base_message = "Sorry, I'm near my limit. Let me quickly help you."
+            hard_limit_message = {
+                "en": "Sorry, I'm near my limit. Let me quickly help you.",
+                "hi": "माफ़ कीजिए, मैं अपनी सीमा के करीब हूँ। मैं जल्दी से आपकी मदद करती हूँ।",
+                "ta": "மன்னிக்கவும், நான் வரம்பை நெருங்கி உள்ளேன். நான் விரைவாக உதவுகிறேன்.",
+            }
+            lang = (getattr(state, "language", None) or getattr(state, "user_language", None) or "en").lower()
+            base_message = hard_limit_message.get(lang, hard_limit_message["en"])
 
         text = self.composer.compose(state, base_message, plan.tone, budget_mode)
 

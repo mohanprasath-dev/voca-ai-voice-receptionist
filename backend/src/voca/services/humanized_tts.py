@@ -14,6 +14,9 @@ from voca.services.speech_chunking import (
 
 logger = logging.getLogger("agent")
 
+# Murf API allows max 2 concurrent TTS requests
+_MURF_CONCURRENCY_SEMAPHORE = asyncio.Semaphore(2)
+
 
 class HumanizedTTSStreamer:
     """Streams speech in natural chunks with pauses, emphasis, and light disfluencies."""
@@ -27,6 +30,7 @@ class HumanizedTTSStreamer:
         self._session = session
         self._murf_tts = murf_tts
         self._rng = rng or random.Random()
+        self._language = "en"  # Updated when TTS changes
         self._current_speech_handle = None
         self._tts_lock = asyncio.Lock()
 
@@ -42,7 +46,10 @@ class HumanizedTTSStreamer:
     ):
         cleaned = (text or "").strip()
         if not cleaned:
-            cleaned = "Just a moment..."
+            cleaned = {
+                "hi": "एक क्षण...",
+                "ta": "ஒரு கணம்...",
+            }.get(self._language, "Just a moment...")
 
         async def chunk_stream():
             previous_chunk: Optional[str] = None
@@ -56,23 +63,30 @@ class HumanizedTTSStreamer:
                     pause_ms = pause_after_chunk_ms(previous_chunk, self._rng)
                     await asyncio.sleep(pause_ms / 1000)
 
-                # Add subtle per-chunk prosody variation.
+                # Language-aware speed variation — tighter range for Hindi/Tamil
+                if self._language in ('hi', 'ta'):
+                    speed = self._rng.randint(-10, -7)
+                    pitch = self._rng.randint(-1, 1)
+                else:
+                    speed = self._rng.randint(-5, -2)
+                    pitch = self._rng.randint(-1, 2)
+
                 tts.update_options(
                     style="Conversational",
-                    # Keep pace closer to natural speech, with light variation.
-                    speed=self._rng.randint(-5, -2),
-                    pitch=self._rng.randint(-1, 2),
+                    speed=speed,
+                    pitch=pitch,
                 )
 
                 spoken_chunk = humanize_chunk(raw_chunk, self._rng)
                 previous_chunk = raw_chunk
                 yield spoken_chunk
 
-        self._current_speech_handle = await self._session.say(
-            chunk_stream(),
-            allow_interruptions=allow_interruptions,
-            add_to_chat_ctx=add_to_chat_ctx,
-        )
+        async with _MURF_CONCURRENCY_SEMAPHORE:
+            self._current_speech_handle = await self._session.say(
+                chunk_stream(),
+                allow_interruptions=allow_interruptions,
+                add_to_chat_ctx=add_to_chat_ctx,
+            )
         return self._current_speech_handle
 
     def interrupt_current(self) -> None:
@@ -94,7 +108,17 @@ class HumanizedTTSStreamer:
         """
         async with self._tts_lock:
             self._murf_tts = new_murf_tts
-            self._murf_tts.update_options(style="Conversational", speed=-4, pitch=0)
+            # Detect language from voice name for speed calibration
+            voice_attr = getattr(new_murf_tts, '_voice', None) or getattr(new_murf_tts, 'voice', None) or ''
+            if 'hi-IN' in str(voice_attr):
+                self._language = 'hi'
+            elif 'ta-IN' in str(voice_attr):
+                self._language = 'ta'
+            else:
+                self._language = 'en'
+            # Set baseline options for the new language
+            base_speed = -8 if self._language in ('hi', 'ta') else -4
+            self._murf_tts.update_options(style="Conversational", speed=base_speed, pitch=0)
 
     async def aclose(self) -> None:
         """Best-effort close to avoid pending TTS stream tasks on shutdown."""

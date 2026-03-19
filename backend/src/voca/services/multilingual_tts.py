@@ -40,22 +40,58 @@ class MultilingualTTSService:
         voice_id = get_voice(config)
         language = get_language(config)
 
-        # Log voice selection
-        logger.info(f"Creating TTS with voice: {voice_id} for language: {language}")
+        logger.info(f"Creating Falcon TTS with voice: {voice_id} for language: {language}")
 
-        # Create TTS instance with language-appropriate settings
-        tts_instance = murf.TTS(
-            voice=voice_id,
-            style="Conversational",
-            speed=-8,  # Slightly slower for better comprehension
-            pitch=0,
-            text_pacing=True,
-        )
+        # Get language-specific speed — Hindi and Tamil need slightly slower pace
+        speed = self._get_speed_for_language(language)
+
+        try:
+            tts_instance = murf.TTS(
+                voice=voice_id,
+                model="falcon2",         # Murf Falcon model — sub-130ms latency
+                style="Conversational",
+                speed=speed,
+                pitch=0,
+                text_pacing=True,
+            )
+        except TypeError:
+            # Backward compatibility for plugin versions that don't accept `model`.
+            logger.warning("Murf SDK does not support `model` parameter; falling back to default model")
+            tts_instance = murf.TTS(
+                voice=voice_id,
+                style="Conversational",
+                speed=speed,
+                pitch=0,
+                text_pacing=True,
+            )
 
         self._current_tts = tts_instance
         self._current_config = config.copy()
 
         return tts_instance
+
+    def _get_speed_for_language(self, language: str) -> int:
+        """
+        Get optimal TTS speed for each language.
+        Hindi and Tamil need slightly slower pace for clarity.
+        English benefits from a natural conversational pace.
+        """
+        SPEED_MAP = {
+            "en": -4,   # Natural conversational English
+            "hi": -8,   # Slower for Hindi clarity and naturalness
+            "ta": -8,   # Slower for Tamil clarity
+            "es": -5,
+            "fr": -5,
+            "ar": -6,
+            "de": -5,
+            "it": -5,
+            "pt": -5,
+            "ru": -6,
+            "ja": -6,
+            "ko": -6,
+            "zh": -6,
+        }
+        return SPEED_MAP.get(language, -5)
 
     def update_tts_for_language(self, detected_language: str, current_config: Dict[str, Any]) -> Optional[murf.TTS]:
         """

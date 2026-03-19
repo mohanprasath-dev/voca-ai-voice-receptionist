@@ -473,18 +473,31 @@ async def entrypoint(ctx: JobContext):
         try:
             chat_ctx = ChatContext.empty()
             chat_ctx.add_message(role="system", content=system_prompt)
+            lang_instruction = {
+                "hi": (
+                    "Rewrite as natural SPOKEN Hindi (Devanagari script). "
+                    "Use simple, warm, conversational Hindi. "
+                    "Use 'आप' for the user. "
+                    "Maximum 2-3 short sentences. "
+                    "No English words unless they are proper nouns or technical terms the user used."
+                ),
+                "ta": (
+                    "Rewrite as natural SPOKEN Tamil (Tamil script). "
+                    "Use simple, warm, conversational Tamil. "
+                    "Maximum 2-3 short sentences. "
+                    "No English words unless they are proper nouns or technical terms the user used."
+                ),
+            }.get(language, (
+                f"Rewrite as natural SPOKEN {language}. "
+                "Short sentences. Warm and conversational. Maximum 2-3 sentences."
+            ))
             chat_ctx.add_message(
                 role="user",
                 content=(
-                    "Rewrite the assistant response so it is natural spoken speech.\n"
-                    f"Target language: {language}\n"
-                    "Hard rules:\n"
-                    f"- You MUST respond ONLY in {language}.\n"
-                    "- Do NOT switch to English.\n"
-                    "- Use short spoken sentences.\n"
-                    "- Keep the meaning and helpfulness.\n\n"
+                    f"{lang_instruction}\n\n"
                     f"User said: {transcript}\n"
-                    f"Assistant draft: {cleaned}"
+                    f"Assistant draft: {cleaned}\n\n"
+                    "Output ONLY the rewritten response. No explanation. No quotes."
                 ),
             )
 
@@ -524,6 +537,16 @@ async def entrypoint(ctx: JobContext):
         payload.update({k: v for k, v in extra.items() if v is not None})
         _publish_data_bg("voca.session", payload)
 
+    def _get_keepalive_message(language: str) -> str:
+        KEEPALIVE_MESSAGES = {
+            "en": "Still with me? I'm here whenever you're ready.",
+            "hi": "क्या आप अभी भी यहाँ हैं? मैं यहाँ हूँ जब आप तैयार हों।",
+            "ta": "நீங்கள் இன்னும் இங்கே இருக்கிறீர்களா? நீங்கள் தயாரானால் நான் இங்கே இருக்கிறேன்.",
+            "es": "¿Sigues ahí? Aquí estoy cuando estés listo.",
+            "fr": "Vous êtes toujours là? Je suis là quand vous êtes prêt.",
+        }
+        return KEEPALIVE_MESSAGES.get(language, KEEPALIVE_MESSAGES["en"])
+
     def _publish_chat(role: str, message: str) -> None:
         if not message:
             return
@@ -536,11 +559,6 @@ async def entrypoint(ctx: JobContext):
                 "timestamp_ms": int(time.time() * 1000),
             },
         )
-
-    # To use a realtime model instead of a voice pipeline, use the following session setup instead.
-    # (Note: This is for the OpenAI Realtime API. For other providers, see https://docs.livekit.io/agents/models/realtime/))
-    # 1. Install livekit-agents[openai]
-    # 2. Set OPENAI_API_KEY in .env.local
     # 3. Add `from livekit.plugins import openai` to the top of this file
     # 4. Use the following session setup instead of the version above
     # session = AgentSession(
@@ -798,7 +816,13 @@ async def entrypoint(ctx: JobContext):
                     speech_text = enhanced_fallback_service.handle_missing_config(get_language(current_config))
 
                 if budget_manager.current_mode() == "hard_limit":
-                    speech_text = "Sorry, I'm near my limit. Let me quickly help you."
+                    hard_limit_message = {
+                        "en": "Sorry, I'm near my limit. Let me quickly help you.",
+                        "hi": "माफ़ कीजिए, मैं अपनी सीमा के करीब हूँ। मैं जल्दी से आपकी मदद करती हूँ।",
+                        "ta": "மன்னிக்கவும், நான் வரம்பை நெருங்கி உள்ளேன். நான் விரைவாக உதவுகிறேன்.",
+                    }
+                    target_lang = get_language(current_config)
+                    speech_text = hard_limit_message.get(target_lang, hard_limit_message["en"])
                     logger.info(
                         "Hard-limit response fallback applied",
                         extra={"session_id": runtime_session_id},
@@ -876,6 +900,8 @@ async def entrypoint(ctx: JobContext):
             prompt = session_orchestrator.keepalive_prompt(runtime_session_id, now_ms)
             if not prompt:
                 continue
+            # Use language-aware message
+            prompt = _get_keepalive_message(get_language(current_config))
             # Only emit keepalive if there has been no activity recently (avoid spamming while talking).
             if now_ms - last_turn_activity_ms < 30_000:
                 continue
