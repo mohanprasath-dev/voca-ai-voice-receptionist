@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import re
 import time
 from contextlib import suppress
 from typing import Optional
@@ -38,6 +39,16 @@ from voca.services.telemetry import Telemetry
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
+
+
+def _sanitize_speech_text(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", (text or "").strip())
+    if not cleaned:
+        return ""
+    cleaned = re.sub(r"([!?.,;:])\1+", r"\1", cleaned)
+    cleaned = re.sub(r"\b(uh+|um+|hmm+)\b[,.!? ]*", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
 
 # ── Language detection ────────────────────────────────────────────────────────
 
@@ -179,7 +190,13 @@ async def entrypoint(ctx: JobContext) -> None:
     current_cfg = final_config.copy()
     last_lang:  Optional[str] = get_language(final_config)
     last_active = int(time.time() * 1000)
+    fallback_cfg = resolve_final_config(user_config, "en")
     tasks: set[asyncio.Task] = set()
+    speech_lock = asyncio.Lock()
+    pending_language: Optional[str] = None
+    last_transcript_ms: Optional[int] = None
+    speech_started_ms: Optional[int] = None
+    agent_state = "idle"
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -214,6 +231,16 @@ async def entrypoint(ctx: JobContext) -> None:
             "timestamp_ms": int(time.time() * 1000),
         })
 
+    def _event(event: str, **fields: object) -> None:
+        payload = {
+            "event": event,
+            "session_id": runtime_id,
+            "room": ctx.room.name,
+            "timestamp_ms": int(time.time() * 1000),
+        }
+        payload.update(fields)
+        logger.info("voca_event %s", json.dumps(payload, ensure_ascii=False))
+
     def _chat(role: str, message: str) -> None:
         if message:
             _pub("voca.chat", {
@@ -237,11 +264,51 @@ async def entrypoint(ctx: JobContext) -> None:
 
     @session.on("agent_state_changed")
     def _on_state(ev: AgentStateChangedEvent) -> None:
+        nonlocal speech_started_ms, pending_language, agent_state, current_cfg, last_lang
+
+        prev_state = agent_state
+        agent_state = str(ev.new_state)
+
         _phase(
             {"listening": "listening", "thinking": "reasoning", "speaking": "speaking"}.get(
                 str(ev.new_state), "idle"
             )
         )
+
+        # Speech lifecycle telemetry
+        if str(ev.new_state) == "speaking":
+            speech_started_ms = int(time.time() * 1000)
+            latency = None
+            if last_transcript_ms is not None:
+                latency = speech_started_ms - last_transcript_ms
+            _event("speech_started", start_latency_ms=latency)
+
+        if prev_state == "speaking" and str(ev.new_state) != "speaking":
+            finished_ms = int(time.time() * 1000)
+            duration = None
+            if speech_started_ms is not None:
+                duration = finished_ms - speech_started_ms
+            _event("speech_finished", duration_ms=duration)
+            speech_started_ms = None
+
+            if pending_language and pending_language != get_language(current_cfg):
+                next_lang = pending_language
+                pending_language = None
+                last_lang = next_lang
+                current_cfg = resolve_final_config(user_config, next_lang)
+                _event("language_switch_apply_deferred", language=next_lang)
+
+                new_tts = multilingual_tts_service.create_tts_instance(current_cfg)
+                for attr in ("_tts", "tts"):
+                    try:
+                        object.__setattr__(session, attr, new_tts)
+                        _event("tts_voice_switched", voice=get_voice(current_cfg), language=next_lang)
+                        break
+                    except Exception:
+                        continue
+                with suppress(Exception):
+                    session.update_instructions(get_dynamic_system_prompt(current_cfg))
+                    _event("prompt_language_switched", language=next_lang)
 
     # ── Barge-in interruption ─────────────────────────────────────────────────
 
@@ -251,6 +318,10 @@ async def entrypoint(ctx: JobContext) -> None:
     @session.on("speech_created")
     def _on_speech(ev: SpeechCreatedEvent) -> None:
         nonlocal latest_handle
+        if latest_handle and latest_handle is not ev.speech_handle and is_speaking:
+            with suppress(Exception):
+                latest_handle.interrupt(force=True)
+            _event("speech_overlap_prevented")
         latest_handle = ev.speech_handle
 
     @session.on("agent_state_changed")
@@ -266,12 +337,13 @@ async def entrypoint(ctx: JobContext) -> None:
                 latest_handle.interrupt(force=True)
             is_speaking = False
             _phase("listening", "interrupt")
+            _event("speech_interrupted", reason="barge_in")
 
     # ── Transcript → language detection + config switch ───────────────────────
 
     @session.on("user_input_transcribed")
     def _on_transcript(ev: UserInputTranscribedEvent) -> None:
-        nonlocal last_lang, last_active, current_cfg
+        nonlocal last_lang, last_active, current_cfg, pending_language, last_transcript_ms
 
         text = (ev.transcript or "").strip()
         if not text:
@@ -286,37 +358,44 @@ async def entrypoint(ctx: JobContext) -> None:
 
         _chat("user", text)
         _phase("reasoning", "transcript")
+        last_transcript_ms = int(time.time() * 1000)
+        _event("transcript_received", text_len=len(text), is_final=True)
 
         # Language resolution — script/heuristic takes priority over STT
         # (deepgram_lang will be None since detect_language=False)
         dg_lang  = getattr(ev, "language", None)
         resolved = _resolve_language(text, dg_lang, last_lang)
 
-        logger.info(
-            f"text='{text[:50]}' | script={_script_detect(text)} "
-            f"| resolved={resolved} | prev={last_lang}"
+        _event(
+            "language_resolved",
+            text_preview=text[:50],
+            script=_script_detect(text),
+            resolved=resolved,
+            previous=last_lang,
+            deepgram_language=dg_lang,
         )
 
         if resolved != get_language(current_cfg) and resolved in SUPPORTED_LANGUAGES:
-            logger.info(f"🌐 {get_language(current_cfg)} → {resolved}")
-            last_lang   = resolved
-            current_cfg = resolve_final_config(user_config, resolved)
+            if is_speaking:
+                pending_language = resolved
+                _event("language_switch_deferred", requested_language=resolved)
+            else:
+                _event("language_switch_apply_now", language=resolved)
+                last_lang = resolved
+                current_cfg = resolve_final_config(user_config, resolved)
 
-            # Swap TTS voice for new language
-            new_tts = multilingual_tts_service.update_tts_for_language(resolved, current_cfg)
-            if new_tts:
+                new_tts = multilingual_tts_service.create_tts_instance(current_cfg)
                 for attr in ("_tts", "tts"):
                     try:
                         object.__setattr__(session, attr, new_tts)
-                        logger.info(f"🔊 TTS → {get_voice(current_cfg)}")
+                        _event("tts_voice_switched", voice=get_voice(current_cfg), language=resolved)
                         break
                     except Exception:
                         continue
 
-            # Update LLM system instructions for new language
-            with suppress(Exception):
-                session.update_instructions(get_dynamic_system_prompt(current_cfg))
-                logger.info(f"📝 Prompt → {resolved}")
+                with suppress(Exception):
+                    session.update_instructions(get_dynamic_system_prompt(current_cfg))
+                    _event("prompt_language_switched", language=resolved)
         else:
             last_lang = resolved
 
@@ -352,11 +431,36 @@ async def entrypoint(ctx: JobContext) -> None:
                 await asyncio.sleep(30)
                 if int(time.time() * 1000) - last_active >= 60_000:
                     lang = get_language(current_cfg)
-                    msg  = KEEPALIVE.get(lang, KEEPALIVE["en"])
-                    logger.info(f"Sending keepalive ({lang})")
+                    msg = _sanitize_speech_text(KEEPALIVE.get(lang, KEEPALIVE["en"]))
+                    if not msg:
+                        msg = "I am here."
+
+                    _event("keepalive_triggered", language=lang)
                     _phase("speaking", "keepalive")
-                    with suppress(Exception):
-                        await session.say(msg, allow_interruptions=True)
+
+                    async with speech_lock:
+                        try:
+                            await session.say(msg, allow_interruptions=True)
+                            _event("keepalive_spoken", attempt=1)
+                        except Exception as first_error:
+                            _event("tts_failure", stage="keepalive", attempt=1, error=str(first_error))
+                            try:
+                                await session.say(msg, allow_interruptions=True)
+                                _event("tts_retry_success", stage="keepalive", attempt=2)
+                            except Exception as second_error:
+                                _event("tts_failure", stage="keepalive", attempt=2, error=str(second_error))
+                                fallback_tts = multilingual_tts_service.create_tts_instance(fallback_cfg)
+                                for attr in ("_tts", "tts"):
+                                    try:
+                                        object.__setattr__(session, attr, fallback_tts)
+                                        break
+                                    except Exception:
+                                        continue
+                                fallback_msg = "I am here. Please repeat that."
+                                with suppress(Exception):
+                                    await session.say(fallback_msg, allow_interruptions=True)
+                                    _event("tts_fallback", stage="keepalive", language="en")
+
                     _phase("listening", "keepalive")
         except asyncio.CancelledError:
             pass  # expected on shutdown — suppress cleanly
