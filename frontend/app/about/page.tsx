@@ -10,6 +10,8 @@ import { BlurText } from '@/components/reactbits/BlurText';
 import { VariableProximity } from '@/components/reactbits/VariableProximity';
 import { Navbar } from '@/components/ui/navbar';
 
+import { Lanyard } from '@/components/reactbits/Lanyard';
+
 const VALUES = [
   {
     title: 'Voice-First UX',
@@ -41,7 +43,7 @@ export default function AboutPage() {
   const containerRef = useRef(null);
 
   return (
-    <div ref={containerRef} className="bg-[#030303] text-white min-h-screen selection:bg-cyan-500/30">
+    <div ref={containerRef} className="bg-transparent text-white min-h-screen selection:bg-cyan-500/30 overflow-x-hidden">
       <Navbar />
       <main>
         <section className="relative z-10 w-full pt-48 pb-20 overflow-hidden">
@@ -163,6 +165,39 @@ export default function AboutPage() {
                   </SpotlightCard>
                 </motion.div>
               ))}
+            </div>
+          </Container>
+        </section>
+
+        {/* Builder Section with Lanyard */}
+        <section className="relative z-10 py-32 px-6">
+          <Container>
+             <div className="text-center mb-20">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                className="inline-block px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6"
+              >
+                <span className="text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">
+                  The Builder
+                </span>
+              </motion.div>
+              <h2 className="text-4xl font-black tracking-tight text-white sm:text-6xl">
+                Behind the Scenes
+              </h2>
+            </div>
+            
+            <div className="relative">
+              <Lanyard 
+                name="Mohan Prasath P"
+                role="AI Engineer / Builder"
+                socials={{
+                  linkedin: "mohanprasath21",
+                  github: "mohanprasath-dev",
+                  website: "www.mohanprasath.dev"
+                }}
+              />
             </div>
           </Container>
         </section>

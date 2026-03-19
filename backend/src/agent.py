@@ -24,7 +24,7 @@ from livekit.agents import (
     cli,
     metrics,
 )
-from livekit.agents.llm import ChatContext, ChatRole
+from livekit.agents.llm import ChatContext
 from livekit.plugins import deepgram, google, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
@@ -373,6 +373,45 @@ async def entrypoint(ctx: JobContext):
     last_detected_language: Optional[str] = None
     background_tasks: set[asyncio.Task[None]] = set()
 
+    def _track_task(task: asyncio.Task[None], *, name: str) -> None:
+        logger.debug("Task created", extra={"task_name": name})
+        background_tasks.add(task)
+
+        def _on_done(done_task: asyncio.Task[None]) -> None:
+            background_tasks.discard(done_task)
+            if done_task.cancelled():
+                logger.debug("Task cancelled", extra={"task_name": name})
+                return
+            with suppress(Exception):
+                exc = done_task.exception()
+                if exc:
+                    logger.warning("Task failed", extra={"task_name": name, "error": str(exc)})
+
+        task.add_done_callback(_on_done)
+
+    async def _cleanup_all_tasks() -> None:
+        if background_tasks:
+            logger.info("Cleaning up background tasks", extra={"task_count": len(background_tasks)})
+
+        pending = [task for task in list(background_tasks) if not task.done()]
+        for task in pending:
+            task.cancel()
+
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+
+        background_tasks.clear()
+        logger.info("Background task cleanup complete")
+
+        close_coro = getattr(humanized_tts, "aclose", None)
+        if callable(close_coro):
+            try:
+                logger.info("Closing TTS stream")
+                await close_coro()
+                logger.info("TTS stream closed")
+            except Exception as close_err:
+                logger.warning("TTS stream close failed", extra={"error": str(close_err)})
+
     async def _llm_detect_language(transcript: str, *, fallback: str) -> str:
         """
         Best-effort language identification for cases where streaming STT doesn't provide
@@ -388,18 +427,18 @@ async def entrypoint(ctx: JobContext):
         if inferred:
             return inferred
 
-        chat_ctx = ChatContext.empty()
-        chat_ctx.add_message(
-            role=ChatRole.SYSTEM,
-            content=(
-                "You are a language identifier.\n"
-                "Return ONLY a single ISO-639-1 language code (examples: en, es, fr, de, it, pt, ru, ja, ko, zh, hi, ta, ar).\n"
-                "No punctuation. No extra text."
-            ),
-        )
-        chat_ctx.add_message(role=ChatRole.USER, content=cleaned)
-
         try:
+            chat_ctx = ChatContext.empty()
+            chat_ctx.add_message(
+                role="system",
+                content=(
+                    "You are a language identifier.\n"
+                    "Return ONLY a single ISO-639-1 language code (examples: en, es, fr, de, it, pt, ru, ja, ko, zh, hi, ta, ar).\n"
+                    "No punctuation. No extra text."
+                ),
+            )
+            chat_ctx.add_message(role="user", content=cleaned)
+
             stream = session.llm.chat(chat_ctx=chat_ctx)
             parts: list[str] = []
             async for chunk in stream:
@@ -409,9 +448,11 @@ async def entrypoint(ctx: JobContext):
                     parts.append(content)
             code = _normalize_language("".join(parts).strip())
             if code and code in SUPPORTED_LANGUAGES:
+                logger.info("Language detection succeeded", extra={"detected_language": code})
                 return code
+            logger.debug("Language detection fallback applied", extra={"raw_code": code, "fallback": fallback})
         except Exception as err:
-            logger.debug("LLM language detection failed", extra={"error": str(err)})
+            logger.warning("LLM language detection failed", extra={"error": str(err), "fallback": fallback})
 
         return fallback
 
@@ -429,24 +470,24 @@ async def entrypoint(ctx: JobContext):
             return cleaned
 
         system_prompt = get_dynamic_system_prompt(config)
-        chat_ctx = ChatContext.empty()
-        chat_ctx.add_message(role=ChatRole.SYSTEM, content=system_prompt)
-        chat_ctx.add_message(
-            role=ChatRole.USER,
-            content=(
-                "Rewrite the assistant response so it is natural spoken speech.\n"
-                f"Target language: {language}\n"
-                "Hard rules:\n"
-                f"- You MUST respond ONLY in {language}.\n"
-                "- Do NOT switch to English.\n"
-                "- Use short spoken sentences.\n"
-                "- Keep the meaning and helpfulness.\n\n"
-                f"User said: {transcript}\n"
-                f"Assistant draft: {cleaned}"
-            ),
-        )
-
         try:
+            chat_ctx = ChatContext.empty()
+            chat_ctx.add_message(role="system", content=system_prompt)
+            chat_ctx.add_message(
+                role="user",
+                content=(
+                    "Rewrite the assistant response so it is natural spoken speech.\n"
+                    f"Target language: {language}\n"
+                    "Hard rules:\n"
+                    f"- You MUST respond ONLY in {language}.\n"
+                    "- Do NOT switch to English.\n"
+                    "- Use short spoken sentences.\n"
+                    "- Keep the meaning and helpfulness.\n\n"
+                    f"User said: {transcript}\n"
+                    f"Assistant draft: {cleaned}"
+                ),
+            )
+
             stream = session.llm.chat(chat_ctx=chat_ctx)
             parts: list[str] = []
             async for chunk in stream:
@@ -471,8 +512,7 @@ async def entrypoint(ctx: JobContext):
 
     def _publish_data_bg(topic: str, payload: dict[str, Any]) -> None:
         task = asyncio.create_task(_publish_data(topic, payload))
-        background_tasks.add(task)
-        task.add_done_callback(background_tasks.discard)
+        _track_task(task, name=f"publish:{topic}")
 
     def _publish_phase(phase: str, intent: Optional[str] = None, **extra: Any) -> None:
         payload: dict[str, Any] = {
@@ -606,8 +646,7 @@ async def entrypoint(ctx: JobContext):
                 last_detected_language = await _llm_detect_language(user_text, fallback=resolved_language)
 
             task = asyncio.create_task(_update_lang())
-            background_tasks.add(task)
-            task.add_done_callback(background_tasks.discard)
+            _track_task(task, name="language-detection")
         else:
             last_detected_language = resolved_language
 
@@ -631,6 +670,13 @@ async def entrypoint(ctx: JobContext):
                 "partial": is_partial,
                 "confidence": partial_confidence,
                 "text": user_text,
+            },
+        )
+        logger.info(
+            "Budget decision",
+            extra={
+                "session_id": runtime_session_id,
+                "budget_mode": budget_manager.current_mode(),
             },
         )
 
@@ -695,7 +741,7 @@ async def entrypoint(ctx: JobContext):
                         # Update TTS if needed
                         new_tts = multilingual_tts_service.update_tts_for_language(event_detected_lang, current_config)
                         if new_tts:
-                            humanized_tts.update_tts(new_tts)
+                            await humanized_tts.update_tts(new_tts)
 
                         # Update agent instructions
                         new_prompt = get_dynamic_system_prompt(current_config)
@@ -751,6 +797,13 @@ async def entrypoint(ctx: JobContext):
                     logger.error("No speech_text produced; emitting fallback", extra={"room_name": ctx.room.name, "session_id": runtime_session_id})
                     speech_text = enhanced_fallback_service.handle_missing_config(get_language(current_config))
 
+                if budget_manager.current_mode() == "hard_limit":
+                    speech_text = "Sorry, I'm near my limit. Let me quickly help you."
+                    logger.info(
+                        "Hard-limit response fallback applied",
+                        extra={"session_id": runtime_session_id},
+                    )
+
                 # Ensure the final spoken response matches the detected language
                 target_language = get_language(current_config)
                 if target_language != "en":
@@ -783,7 +836,7 @@ async def entrypoint(ctx: JobContext):
                                 pitch=0,
                                 text_pacing=True,
                             )
-                            humanized_tts.update_tts(retry_tts)
+                            await humanized_tts.update_tts(retry_tts)
                         retry_text = enhanced_fallback_service.handle_tts_failure(get_language(current_config))
                         await humanized_tts.say(retry_text, allow_interruptions=True)
                     except Exception:
@@ -803,10 +856,11 @@ async def entrypoint(ctx: JobContext):
                 _publish_phase("listening", intent="error")
             finally:
                 guard_task.cancel()
+                with suppress(Exception):
+                    await guard_task
 
         task = asyncio.create_task(_run_turn_pipeline())
-        background_tasks.add(task)
-        task.add_done_callback(background_tasks.discard)
+        _track_task(task, name="turn-pipeline")
 
     async def log_usage():
         summary = usage_collector.get_summary()
@@ -855,12 +909,16 @@ async def entrypoint(ctx: JobContext):
     _publish_phase("listening", intent="connected")
 
     keepalive_task = asyncio.create_task(keepalive_loop())
+    _track_task(keepalive_task, name="keepalive-loop")
 
-    async def _cancel_keepalive() -> None:
-        if keepalive_task:
-            keepalive_task.cancel()
+    async def _shutdown_cleanup() -> None:
+        try:
+            if keepalive_task:
+                keepalive_task.cancel()
+        finally:
+            await _cleanup_all_tasks()
 
-    ctx.add_shutdown_callback(_cancel_keepalive)
+    ctx.add_shutdown_callback(_shutdown_cleanup)
 
 
 if __name__ == "__main__":

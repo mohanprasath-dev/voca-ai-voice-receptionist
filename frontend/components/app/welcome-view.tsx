@@ -20,7 +20,7 @@ export const WelcomeView = ({
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
     <div
-      className="ambient-bg noise-overlay relative flex min-h-screen h-full w-full items-center justify-center overflow-hidden p-6 pt-24 bg-[#030303]"
+      className="ambient-bg noise-overlay relative flex min-h-screen h-full w-full items-center justify-center overflow-hidden p-6 pt-24 bg-transparent"
       {...props}
     >
       <div className="pointer-events-none absolute inset-0">

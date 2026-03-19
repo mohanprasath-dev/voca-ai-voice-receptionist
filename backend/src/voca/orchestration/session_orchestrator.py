@@ -1,5 +1,6 @@
 from time import time
 from typing import Optional
+import logging
 
 from voca.api.contracts import (
     BudgetMode,
@@ -20,6 +21,8 @@ from voca.orchestration.slot_filler import SlotFiller
 from voca.orchestration.turn_manager import TurnManager
 from voca.services.budget_manager import BudgetManager
 from voca.services.fallbacks import FallbackService
+
+logger = logging.getLogger("agent")
 
 
 class SessionOrchestrator:
@@ -63,31 +66,6 @@ class SessionOrchestrator:
             state.language = detected_lang
         self.memory.update_summary(state, turn["user_text"])
 
-        if self.budget.is_blocked():
-            text = "I'm at my usage limit for this demo session. Please try again later."
-            state.last_agent_message = text
-            state.phase = "speaking"
-            self.store.save(state)
-            self._last_activity_ms[state.session_id] = int(time() * 1000)
-            return {
-                "session_id": state.session_id,
-                "intent": "budget_blocked",
-                "intent_confidence": 1.0,
-                "route_action": RouteAction.CLARIFY.value,
-                "tone": Tone.CALM.value,
-                "missing_slots": [],
-                "speech_text": text,
-                "language_segments": self.composer.segment_multilingual(text),
-                "escalation_required": False,
-                "queue_position": state.queue_position,
-                "dead_air_filler_used": False,
-                "telemetry_tags": {
-                    "phase": state.phase,
-                    "budget_mode": BudgetMode(self.budget.current_mode()).value,
-                    "early_response_started": "false",
-                },
-            }
-
         early_response_started = self.turn_manager.should_start_early_response(
             turn["partial"],
             turn.get("partial_confidence"),
@@ -112,6 +90,14 @@ class SessionOrchestrator:
                 base_message = f"{reminder} {base_message}".strip()
 
         budget_mode = BudgetMode(self.budget.current_mode())
+        logger.info(
+            "Budget decision",
+            extra={"session_id": state.session_id, "budget_mode": budget_mode.value},
+        )
+
+        if budget_mode == BudgetMode.HARD_LIMIT:
+            base_message = "Sorry, I'm near my limit. Let me quickly help you."
+
         text = self.composer.compose(state, base_message, plan.tone, budget_mode)
 
         elapsed_ms = int((time() - started) * 1000)

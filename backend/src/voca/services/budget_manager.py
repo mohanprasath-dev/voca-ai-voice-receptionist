@@ -29,8 +29,8 @@ class BudgetManager:
         return self._usage.mode
 
     def is_blocked(self) -> bool:
-        """Hard stop when budget is exhausted."""
-        return self._usage.mode == BudgetMode.HARD_LIMIT.value
+        """Budget no longer hard-blocks responses; hard_limit is handled via compression."""
+        return False
 
     def _update_mode(self) -> None:
         stt_ratio = self._usage.stt_seconds_used / self._config.stt_max_seconds

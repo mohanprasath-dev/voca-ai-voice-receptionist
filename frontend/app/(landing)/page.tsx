@@ -5,7 +5,7 @@ import { Navbar } from '@/components/ui/navbar';
 
 export default function LandingPage() {
   return (
-    <div className="voca-navy-bg text-foreground selection:bg-foreground selection:text-background relative min-h-screen overflow-hidden">
+    <div className="bg-transparent text-white selection:bg-cyan-500/30 relative min-h-screen overflow-hidden">
       <Navbar />
       <main>
         <Hero />

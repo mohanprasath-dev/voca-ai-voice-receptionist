@@ -16,7 +16,7 @@ const STATS = [
 
 export default function DashboardPage() {
   return (
-    <div className="bg-[#050505] min-h-screen text-white selection:bg-cyan-500/30">
+    <div className="bg-transparent min-h-screen text-white selection:bg-cyan-500/30">
       <Navbar />
       
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">

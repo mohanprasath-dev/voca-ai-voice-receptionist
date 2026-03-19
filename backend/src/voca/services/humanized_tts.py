@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random
 from typing import Optional
 
@@ -10,6 +11,8 @@ from voca.services.speech_chunking import (
     iter_response_chunks,
     pause_after_chunk_ms,
 )
+
+logger = logging.getLogger("agent")
 
 
 class HumanizedTTSStreamer:
@@ -82,24 +85,24 @@ class HumanizedTTSStreamer:
             # Interruption is best-effort; handle may already be completed.
             return
     
-    def update_tts(self, new_murf_tts: murf.TTS) -> None:
+    async def update_tts(self, new_murf_tts: murf.TTS) -> None:
         """
         Update the TTS instance for multilingual support.
         
         Args:
             new_murf_tts: New Murf TTS instance
         """
-        async def _swap() -> None:
-            async with self._tts_lock:
-                self._murf_tts = new_murf_tts
-                # Reapply conversational style baseline
-                self._murf_tts.update_options(style="Conversational", speed=-4, pitch=0)
-
-        # Swap safely without interrupting current stream.
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(_swap())
-        except RuntimeError:
-            # If called outside of an event loop, do a best-effort synchronous swap.
+        async with self._tts_lock:
             self._murf_tts = new_murf_tts
             self._murf_tts.update_options(style="Conversational", speed=-4, pitch=0)
+
+    async def aclose(self) -> None:
+        """Best-effort close to avoid pending TTS stream tasks on shutdown."""
+        async with self._tts_lock:
+            self.interrupt_current()
+            close_fn = getattr(self._murf_tts, "aclose", None)
+            if callable(close_fn):
+                try:
+                    await close_fn()
+                except Exception as close_err:
+                    logger.debug("Murf TTS close failed", extra={"error": str(close_err)})
