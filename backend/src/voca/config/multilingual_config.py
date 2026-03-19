@@ -89,11 +89,17 @@ def resolve_final_config(
     merged = merge_config(user_config, DEFAULT_AGENT_CONFIG)
     validated = validate_agent_config(merged)
 
+    target_language = None
     if detected_language and detected_language in SUPPORTED_LANGUAGES:
-        validated["language"] = detected_language
+        target_language = detected_language
+    elif validated.get("language") in SUPPORTED_LANGUAGES:
+        target_language = validated["language"]
+
+    if target_language:
+        validated["language"] = target_language
         user_voice = user_config.get("voice_id") if user_config else None
         if not user_voice or user_voice not in AVAILABLE_VOICES:
-            validated["voice_id"] = get_voice_for_language(detected_language)
+            validated["voice_id"] = get_voice_for_language(target_language)
 
     logger.info(
         f"Config resolved — role={validated['role']} lang={validated['language']} voice={validated['voice_id']}"
@@ -139,8 +145,10 @@ def generate_multilingual_system_prompt(config: Dict[str, Any]) -> str:
     }
     greeting = GREETING.get(language, GREETING["en"])
 
-    return f"""You are a warm, human voice {role} for {company_name}.
+    return f"""You are Voca Assistant, a warm, human voice {role} for {company_name}.
 {company_description}
+
+Always respond in {language}.
 
 SERVICES: {services_text}
 

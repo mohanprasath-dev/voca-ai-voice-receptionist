@@ -86,36 +86,29 @@ class ResponseComposer:
         return selected.strip()
 
     def segment_multilingual(self, text: str) -> list[LanguageSegment]:
-        """Segment text by script for multilingual TTS routing."""
+        """Segment text by script and common Romanized Hindi tokens."""
+        roman_hindi_tokens = {
+            "kal", "baje", "namaste", "namaskar", "aaj", "shukriya", "dhanyavad", "nahi", "haan",
+            "theek", "accha", "kya", "hai", "hain", "mujhe", "aap", "aapko", "bataiye",
+        }
+
+        tokens = [tok for tok in re.split(r"\s+", text.strip()) if tok]
+        if not tokens:
+            return [{"text": text, "lang": "en"}]
+
         segments: list[LanguageSegment] = []
-        current_text = ""
-        current_lang = "en"
+        for token in tokens:
+            lang = "en"
+            if any(0x0900 <= ord(ch) <= 0x097F for ch in token):
+                lang = "hi"
+            elif any(0x0B80 <= ord(ch) <= 0x0BFF for ch in token):
+                lang = "ta"
+            elif any(0x0600 <= ord(ch) <= 0x06FF for ch in token):
+                lang = "ar"
+            elif token.lower().strip(".,!?;:") in roman_hindi_tokens:
+                lang = "hi"
 
-        for char in text:
-            code = ord(char)
-            if 0x0900 <= code <= 0x097F:  # Devanagari (Hindi)
-                char_lang = "hi"
-            elif 0x0B80 <= code <= 0x0BFF:  # Tamil
-                char_lang = "ta"
-            elif 0x0600 <= code <= 0x06FF:  # Arabic
-                char_lang = "ar"
-            else:
-                char_lang = "en"
-
-            if char_lang != current_lang and current_text.strip():
-                segments.append({"text": current_text.strip(), "lang": current_lang})
-                current_text = char
-                current_lang = char_lang
-            else:
-                current_text += char
-                current_lang = char_lang
-
-        if current_text.strip():
-            segments.append({"text": current_text.strip(), "lang": current_lang})
-
-        # If no segments were created (edge case), return original
-        if not segments:
-            segments.append({"text": text, "lang": "en"})
+            segments.append({"text": token, "lang": lang})
 
         return segments
 
