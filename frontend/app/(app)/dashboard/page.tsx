@@ -5,7 +5,6 @@ import * as Icons from '@phosphor-icons/react';
 import { PixelCard } from '@/components/reactbits/PixelCard';
 import { SpotlightCard } from '@/components/reactbits/SpotlightCard';
 import { BlurText } from '@/components/reactbits/BlurText';
-import { Navbar } from '@/components/ui/navbar';
 
 const STATS = [
   { label: 'Total Conversations', value: '1,284', change: '+12%', icon: Icons.UsersIcon, color: 'text-blue-400' },
@@ -17,8 +16,6 @@ const STATS = [
 export default function DashboardPage() {
   return (
     <div className="bg-transparent min-h-screen text-white selection:bg-cyan-500/30">
-      <Navbar />
-      
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
         <header className="mb-12">
           <BlurText 

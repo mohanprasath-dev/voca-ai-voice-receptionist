@@ -59,12 +59,12 @@ export const Hero = () => {
               transition={{ delay: 0.8, duration: 0.5 }}
               className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6"
             >
-              <Link href="/demo" passHref legacyBehavior>
+              <Link href="/demo">
                 <LandingButton variant="primary" className="w-full sm:w-auto px-10 py-6 text-lg">
                   Try Live Demo →
                 </LandingButton>
               </Link>
-              <Link href="/dashboard" passHref legacyBehavior>
+              <Link href="/dashboard">
                 <LandingButton variant="secondary" className="w-full sm:w-auto px-10 py-6 text-lg">
                   View Dashboard
                 </LandingButton>

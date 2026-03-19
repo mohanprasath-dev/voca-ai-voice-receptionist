@@ -4,6 +4,12 @@ import React, { useMemo } from 'react';
 import type { LiveMetrics } from '@/lib/contracts';
 import { cn } from '@/lib/utils';
 
+const BUDGET_LABELS: Record<string, string> = {
+  normal: 'Budget OK',
+  near_limit: 'Near Limit',
+  hard_limit: 'Hard Limit',
+};
+
 interface BudgetIndicatorProps {
   metrics: LiveMetrics;
   className?: string;
@@ -31,7 +37,7 @@ export function BudgetIndicator({ metrics, className }: BudgetIndicatorProps) {
         />
       </div>
       <div className="text-[10px] font-black tracking-widest text-white/70 uppercase">
-        {mode.replace('_', ' ')} · {Math.round(pct)}%
+        {BUDGET_LABELS[mode] ?? 'Budget OK'} · {Math.round(pct)}%
       </div>
     </div>
   );

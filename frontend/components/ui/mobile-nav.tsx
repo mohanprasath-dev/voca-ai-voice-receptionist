@@ -29,9 +29,6 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent position="left" className="w-[300px] border-r border-white/5 bg-[#030303]/90 backdrop-blur-2xl p-8">
         <Link href="/" className="flex items-center gap-2 mb-12" onClick={() => setOpen(false)}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 font-black text-white">
-            V
-          </div>
           <span className="text-[14px] font-black tracking-[0.2em] text-white uppercase">
             Voca
           </span>

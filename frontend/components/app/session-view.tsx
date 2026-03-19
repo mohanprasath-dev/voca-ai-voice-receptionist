@@ -97,7 +97,7 @@ export const SessionView = ({ ...props }: React.ComponentProps<'section'> & Sess
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="absolute top-24 inset-x-0 z-50 flex items-center justify-between px-8 md:px-12"
+        className="absolute top-20 md:top-24 inset-x-0 z-50 flex items-center justify-between px-8 md:px-12"
       >
         <div className="flex items-center gap-6">
           <ConnectionIndicator state={room.state} />
@@ -163,12 +163,12 @@ export const SessionView = ({ ...props }: React.ComponentProps<'section'> & Sess
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">System Intelligence</span>
-                <LiveMetricsPanel metrics={liveMetrics} />
+                <LiveMetricsPanel metrics={liveMetrics} className="bg-transparent border-0 shadow-none rounded-none p-0" />
               </div>
               <div className="h-px bg-white/5" />
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">Network Health</span>
-                <LatencyDebugPanel metrics={liveMetrics} />
+                <LatencyDebugPanel metrics={liveMetrics} className="bg-transparent border-0 rounded-none p-0" />
               </div>
             </div>
           </SpotlightCard>

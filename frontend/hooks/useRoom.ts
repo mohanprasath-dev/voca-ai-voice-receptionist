@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Room, RoomEvent, TokenSource } from 'livekit-client';
 import { AppConfig } from '@/app-config';
+import type { AgentConfig } from '@/types/agent-config';
 
 export interface RoomHookState {
   room: Room;
@@ -11,7 +12,7 @@ export interface RoomHookState {
   endSession: () => void;
 }
 
-export function useRoom(appConfig: AppConfig, agentConfig?: any): RoomHookState {
+export function useRoom(appConfig: AppConfig, agentConfig?: AgentConfig): RoomHookState {
   const aborted = useRef(false);
   const room = useMemo(() => new Room(), []);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -21,12 +22,10 @@ export function useRoom(appConfig: AppConfig, agentConfig?: any): RoomHookState 
   useEffect(() => {
     function onDisconnected() {
       setIsSessionActive(false);
-      console.debug('[voca] room disconnected');
     }
 
     function onConnected() {
       setRestoredAfterDisconnect(true);
-      console.debug('[voca] room connected');
     }
 
     function onDataReceived(
@@ -46,7 +45,6 @@ export function useRoom(appConfig: AppConfig, agentConfig?: any): RoomHookState 
           phase?: string;
           intent?: string;
         };
-        console.debug('[voca] session event', data);
         if (typeof data.queue_position === 'number') {
           setQueuePosition(data.queue_position);
         }
@@ -141,7 +139,6 @@ export function useRoom(appConfig: AppConfig, agentConfig?: any): RoomHookState 
 
         console.error('There was an error connecting to the agent:', error);
       });
-      console.debug('[voca] startSession: mic enable + connect triggered');
     }
   }, [room, appConfig, tokenSource, agentConfig]);
 

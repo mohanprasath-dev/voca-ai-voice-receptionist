@@ -4,11 +4,9 @@ import { useRef } from 'react';
 import { motion } from 'motion/react';
 import * as Icons from '@phosphor-icons/react';
 import { Container } from '@/components/ui/container';
-import { Footer } from '@/components/ui/footer';
 import { SpotlightCard } from '@/components/reactbits/SpotlightCard';
 import { BlurText } from '@/components/reactbits/BlurText';
 import { VariableProximity } from '@/components/reactbits/VariableProximity';
-import { Navbar } from '@/components/ui/navbar';
 
 import { Lanyard } from '@/components/reactbits/Lanyard';
 
@@ -44,7 +42,6 @@ export default function AboutPage() {
 
   return (
     <div ref={containerRef} className="bg-transparent text-white min-h-screen selection:bg-cyan-500/30 overflow-x-hidden">
-      <Navbar />
       <main>
         <section className="relative z-10 w-full pt-48 pb-20 overflow-hidden">
           {/* Background decoration */}
@@ -218,7 +215,6 @@ export default function AboutPage() {
           </Container>
         </section>
       </main>
-      <Footer />
     </div>
   );
 }

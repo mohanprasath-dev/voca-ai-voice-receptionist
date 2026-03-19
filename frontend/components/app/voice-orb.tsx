@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { motion } from 'motion/react';
+import type { Variants } from 'motion/react';
 import type { VoicePhase } from '@/lib/contracts';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +21,7 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
     );
   }
 
-  const orbVariants: any = {
+  const orbVariants: Variants = {
     idle: { scale: 1, filter: 'blur(10px)', opacity: 0.45 },
     listening: {
       scale: [1, 1.05, 1],
@@ -46,7 +46,7 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
     ended: { scale: 0.9, filter: 'blur(10px)', opacity: 0.2 },
   };
 
-  const coreVariants: any = {
+  const coreVariants: Variants = {
     idle: { scale: 1 },
     listening: {
       scale: [1, 1.1, 1],
@@ -65,7 +65,7 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
     ended: { scale: 0.9 },
   };
 
-  const ringVariants: any = {
+  const ringVariants: Variants = {
     idle: { opacity: 0, scale: 0.8 },
     listening: {
       opacity: [0, 0.5, 0],
@@ -79,7 +79,7 @@ export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
     ended: { opacity: 0 },
   };
 
-  const ringVariantsDelayed: any = {
+  const ringVariantsDelayed: Variants = {
     idle: { opacity: 0, scale: 0.8 },
     listening: {
       opacity: [0, 0.3, 0],

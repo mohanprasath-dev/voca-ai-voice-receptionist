@@ -3,9 +3,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Settings, Globe, User, Building, ChevronRight } from 'lucide-react';
-import { AgentConfig, DEFAULT_AGENT_CONFIG, SUPPORTED_LANGUAGES, AVAILABLE_VOICES } from '@/types/agent-config';
+import {
+  AgentConfig,
+  AgentRole,
+  AgentTone,
+  DEFAULT_AGENT_CONFIG,
+  SUPPORTED_LANGUAGES,
+  AVAILABLE_VOICES,
+  VoiceId,
+} from '@/types/agent-config';
 import { Button } from '@/components/ui/button';
-import { SpotlightCard } from '@/components/reactbits/SpotlightCard';
 
 interface AgentConfigPanelProps {
   config: Partial<AgentConfig>;
@@ -112,7 +119,7 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                 ].map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    onClick={() => setActiveTab(id as any)}
+                    onClick={() => setActiveTab(id as 'voice' | 'role' | 'company')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-300 ${
                       activeTab === id
                         ? 'text-white bg-white/10 shadow-lg'
@@ -153,7 +160,7 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                         <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Voice Profile</label>
                         <select
                           value={config.voice_id || DEFAULT_AGENT_CONFIG.voice_id}
-                          onChange={(e) => updateConfig({ voice_id: e.target.value as any })}
+                          onChange={(e) => updateConfig({ voice_id: e.target.value as VoiceId })}
                           className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white appearance-none focus:outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
                         >
                           {AVAILABLE_VOICES.map((voice) => (
@@ -170,7 +177,7 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                           {['friendly', 'calm', 'urgent'].map((t) => (
                             <button
                               key={t}
-                              onClick={() => updateConfig({ tone: t as any })}
+                              onClick={() => updateConfig({ tone: t as AgentTone })}
                               className={`h-10 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all duration-300 ${
                                 (config.tone || DEFAULT_AGENT_CONFIG.tone) === t
                                   ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
@@ -198,7 +205,7 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                         {['receptionist', 'sales', 'support', 'assistant'].map((r) => (
                           <button
                             key={r}
-                            onClick={() => updateConfig({ role: r as any })}
+                            onClick={() => updateConfig({ role: r as AgentRole })}
                             className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 text-left ${
                               (config.role || DEFAULT_AGENT_CONFIG.role) === r
                                 ? 'bg-cyan-500/10 border-cyan-500/50'
