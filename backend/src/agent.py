@@ -1,8 +1,9 @@
-import logging
-import json
-import time
 import asyncio
-from typing import Any, Optional, Tuple
+import json
+import logging
+import time
+from contextlib import suppress
+from typing import Any, Optional
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -14,38 +15,38 @@ from livekit.agents import (
     JobProcess,
     MetricsCollectedEvent,
     RoomInputOptions,
-    WorkerOptions,
-    cli,
-    metrics,
-    UserInputTranscribedEvent,
     SpeechCreatedEvent,
+    UserInputTranscribedEvent,
     UserStateChangedEvent,
     # function_tool,
     # RunContext
+    WorkerOptions,
+    cli,
+    metrics,
 )
-from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
+from livekit.agents.llm import ChatContext, ChatRole
+from livekit.plugins import deepgram, google, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+
 from voca.api.contracts import TurnInput
+from voca.app_config import DEFAULT_CONFIG
+from voca.config.multilingual_config import (
+    SUPPORTED_LANGUAGES,
+    get_language,
+    get_role,
+    get_voice,
+    resolve_final_config,
+)
 from voca.orchestration.context_memory import ContextMemory
 from voca.orchestration.experience_controller import ExperienceController
 from voca.orchestration.session_orchestrator import SessionOrchestrator
 from voca.orchestration.turn_manager import TurnManager
 from voca.prompts.system_prompt import get_dynamic_system_prompt
 from voca.services.budget_manager import BudgetManager
-from voca.services.telemetry import Telemetry
-from voca.services.fallbacks import FallbackService
+from voca.services.enhanced_fallbacks import enhanced_fallback_service
 from voca.services.humanized_tts import HumanizedTTSStreamer
 from voca.services.multilingual_tts import multilingual_tts_service
-from voca.services.enhanced_fallbacks import enhanced_fallback_service
-from voca.config.multilingual_config import (
-    resolve_final_config,
-    get_voice,
-    get_language,
-    get_role,
-    get_company,
-    SUPPORTED_LANGUAGES
-)
-from voca.app_config import DEFAULT_CONFIG
+from voca.services.telemetry import Telemetry
 
 logger = logging.getLogger("agent")
 
@@ -53,7 +54,7 @@ load_dotenv(".env.local")
 
 
 class Assistant(Agent):
-    def __init__(self, agent_config: dict = None) -> None:
+    def __init__(self, agent_config: Optional[dict] = None) -> None:
         # Use dynamic system prompt based on configuration
         system_prompt = get_dynamic_system_prompt(agent_config)
         super().__init__(
@@ -123,7 +124,7 @@ def _extract_transcript_text(*args: Any, **kwargs: Any) -> str:
     return ""
 
 
-def _extract_partial_confidence(*args: Any, **kwargs: Any) -> Tuple[bool, Optional[float]]:
+def _extract_partial_confidence(*args: Any, **kwargs: Any) -> tuple[bool, Optional[float]]:
     is_partial = bool(kwargs.get("partial", False))
     confidence = kwargs.get("confidence") or kwargs.get("partial_confidence")
 
@@ -141,7 +142,106 @@ def _extract_partial_confidence(*args: Any, **kwargs: Any) -> Tuple[bool, Option
     return is_partial, None
 
 
-async def entrypoint(ctx: JobContext, user_config: dict = None):
+def _normalize_language(code: Optional[str]) -> Optional[str]:
+    if not code:
+        return None
+    cleaned = str(code).strip()
+    if not cleaned:
+        return None
+    primary = cleaned.split("-")[0].split("_")[0].lower()
+    return primary or None
+
+
+def extract_language(result: Any) -> str:
+    """
+    Extract detected language from LiveKit transcript events or raw Deepgram results.
+
+    Handles:
+    1) result.channel.alternatives[0].languages[0]
+    2) result.metadata["language"]
+    3) event.language (LiveKit UserInputTranscribedEvent)
+    """
+    try:
+        lang = result.channel.alternatives[0].languages[0]
+        normalized = _normalize_language(lang)
+        if normalized:
+            return normalized
+    except Exception:
+        pass
+
+    try:
+        md = getattr(result, "metadata", None)
+        if isinstance(md, dict):
+            normalized = _normalize_language(md.get("language"))
+            if normalized:
+                return normalized
+    except Exception:
+        pass
+
+    try:
+        normalized = _normalize_language(getattr(result, "language", None))
+        if normalized:
+            return normalized
+    except Exception:
+        pass
+
+    return "en"
+
+
+def _script_counts(text: str) -> dict[str, int]:
+    counts: dict[str, int] = {"devanagari": 0, "tamil": 0, "arabic": 0, "latin": 0, "other": 0}
+    for ch in text:
+        o = ord(ch)
+        if 0x0900 <= o <= 0x097F:
+            counts["devanagari"] += 1
+        elif 0x0B80 <= o <= 0x0BFF:
+            counts["tamil"] += 1
+        elif 0x0600 <= o <= 0x06FF or 0x0750 <= o <= 0x077F or 0x08A0 <= o <= 0x08FF:
+            counts["arabic"] += 1
+        elif ("A" <= ch <= "Z") or ("a" <= ch <= "z"):
+            counts["latin"] += 1
+        elif ch.isalpha():
+            counts["other"] += 1
+    return counts
+
+
+def _dominant_language_from_text(text: str) -> Optional[str]:
+    counts = _script_counts(text)
+    lowered = text.lower()
+    # Lightweight Hinglish heuristic (Latin script Hindi tokens).
+    if any(token in lowered.split() for token in ("namaste", "kal", "aaj", "baje", "kripya", "dhanyavad", "shukriya")):
+        return "hi"
+    if counts["tamil"] > 0 and counts["tamil"] >= max(counts["devanagari"], counts["arabic"]):
+        return "ta"
+    if counts["devanagari"] > 0 and counts["devanagari"] >= max(counts["tamil"], counts["arabic"]):
+        return "hi"
+    if counts["arabic"] > 0 and counts["arabic"] >= max(counts["tamil"], counts["devanagari"]):
+        return "ar"
+    return None
+
+
+def _resolve_detected_language(
+    transcript: str,
+    detected: Optional[str],
+    *,
+    last_detected_language: Optional[str],
+) -> str:
+    normalized = _normalize_language(detected) if detected else None
+
+    # If language detection is missing, try to infer from script.
+    if not normalized:
+        inferred = _dominant_language_from_text(transcript)
+        return inferred or (last_detected_language or "en")
+
+    # If Deepgram reports English but we clearly see non-Latin scripts, treat it as a wrong detection.
+    inferred = _dominant_language_from_text(transcript)
+    if normalized == "en" and inferred and inferred != "en":
+        return last_detected_language or inferred
+
+    return normalized
+
+
+async def entrypoint(ctx: JobContext, user_config: Optional[dict] = None):
     # Logging setup
     # Add any other context you want in all log entries here
     ctx.log_context_fields = {
@@ -150,14 +250,23 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
 
     # Resolve final configuration with multilingual support
     final_config = resolve_final_config(user_config)
-    
+
     # Create initial TTS with resolved configuration
     murf_tts = multilingual_tts_service.create_tts_instance(final_config)
 
     # Set up a voice AI pipeline using OpenAI, Cartesia, AssemblyAI, and the LiveKit turn detector
     session = AgentSession(
         # Speech-to-text (STT) - starting with English, will handle language detection in transcript events
-        stt=deepgram.STT(model="nova-2"),
+        stt=deepgram.STT(
+            model="nova-3",
+            # LiveKit's Deepgram streaming wrapper doesn't support server-side language
+            # detection. Use Deepgram's multilingual streaming mode instead and resolve
+            # per-utterance language in the transcript handler.
+            language="multi",
+            detect_language=False,
+            interim_results=True,
+            smart_format=True,
+        ),
         # A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
         # See all available models at https://docs.livekit.io/agents/models/llm/
         llm=google.LLM(
@@ -180,14 +289,13 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
     turn_manager = TurnManager()
     budget_manager = BudgetManager(DEFAULT_CONFIG)
     telemetry = Telemetry()
-    fallback_service = FallbackService()
     session_orchestrator = SessionOrchestrator(
         memory=context_memory,
         experience=experience_controller,
         budget=budget_manager,
         turn_manager=turn_manager,
     )
-    
+
     # Store configuration in session orchestrator
     if hasattr(session_orchestrator, 'set_agent_config'):
         session_orchestrator.set_agent_config(final_config)
@@ -206,19 +314,113 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
     keepalive_task: Optional[asyncio.Task[None]] = None
     last_turn_activity_ms = int(time.time() * 1000)
     humanized_tts = HumanizedTTSStreamer(session=session, murf_tts=murf_tts)
-    
+
     # Multilingual session state
     current_config = final_config.copy()
     detected_language = None
+    last_detected_language: Optional[str] = None
+    background_tasks: set[asyncio.Task[None]] = set()
 
-    def _publish_data(topic: str, payload: dict[str, Any]) -> None:
+    async def _llm_detect_language(transcript: str, *, fallback: str) -> str:
+        """
+        Best-effort language identification for cases where streaming STT doesn't provide
+        per-utterance language (e.g., Latin-script languages like es/fr/de/it/pt).
+        Returns an ISO-639-1 primary code that is supported by our config layer.
+        """
+        cleaned = (transcript or "").strip()
+        if not cleaned:
+            return fallback
+
+        # If script heuristics already clearly identify a language, keep it.
+        inferred = _dominant_language_from_text(cleaned)
+        if inferred:
+            return inferred
+
+        chat_ctx = ChatContext.empty()
+        chat_ctx.add_message(
+            role=ChatRole.SYSTEM,
+            content=(
+                "You are a language identifier.\n"
+                "Return ONLY a single ISO-639-1 language code (examples: en, es, fr, de, it, pt, ru, ja, ko, zh, hi, ta, ar).\n"
+                "No punctuation. No extra text."
+            ),
+        )
+        chat_ctx.add_message(role=ChatRole.USER, content=cleaned)
+
+        try:
+            stream = session.llm.chat(chat_ctx=chat_ctx)
+            parts: list[str] = []
+            async for chunk in stream:
+                delta = getattr(chunk, "delta", None)
+                content = getattr(delta, "content", None) if delta else None
+                if isinstance(content, str) and content:
+                    parts.append(content)
+            code = _normalize_language("".join(parts).strip())
+            if code and code in SUPPORTED_LANGUAGES:
+                return code
+        except Exception as err:
+            logger.debug("LLM language detection failed", extra={"error": str(err)})
+
+        return fallback
+
+    async def _rewrite_for_language(
+        draft_text: str,
+        *,
+        transcript: str,
+        language: str,
+        config: dict,
+    ) -> str:
+        cleaned = (draft_text or "").strip()
+        if not cleaned:
+            return cleaned
+        if language == "en":
+            return cleaned
+
+        system_prompt = get_dynamic_system_prompt(config)
+        chat_ctx = ChatContext.empty()
+        chat_ctx.add_message(role=ChatRole.SYSTEM, content=system_prompt)
+        chat_ctx.add_message(
+            role=ChatRole.USER,
+            content=(
+                "Rewrite the assistant response so it is natural spoken speech.\n"
+                f"Target language: {language}\n"
+                "Hard rules:\n"
+                f"- You MUST respond ONLY in {language}.\n"
+                "- Do NOT switch to English.\n"
+                "- Use short spoken sentences.\n"
+                "- Keep the meaning and helpfulness.\n\n"
+                f"User said: {transcript}\n"
+                f"Assistant draft: {cleaned}"
+            ),
+        )
+
+        try:
+            stream = session.llm.chat(chat_ctx=chat_ctx)
+            parts: list[str] = []
+            async for chunk in stream:
+                delta = getattr(chunk, "delta", None)
+                content = getattr(delta, "content", None) if delta else None
+                if isinstance(content, str) and content:
+                    parts.append(content)
+            rewritten = "".join(parts).strip()
+            return rewritten or cleaned
+        except Exception as llm_err:
+            logger.warning("LLM rewrite failed; using draft", extra={"error": str(llm_err), "language": language})
+            return cleaned
+
+    async def _publish_data(topic: str, payload: dict[str, Any]) -> None:
         try:
             participant = getattr(ctx.room, "local_participant", None)
             if participant is None:
                 return
-            participant.publish_data(payload=json.dumps(payload), topic=topic, reliable=True)
+            await participant.publish_data(payload=json.dumps(payload), topic=topic, reliable=True)
         except Exception as publish_error:
             logger.debug("Failed to publish data message", extra={"topic": topic, "error": str(publish_error)})
+
+    def _publish_data_bg(topic: str, payload: dict[str, Any]) -> None:
+        task = asyncio.create_task(_publish_data(topic, payload))
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
 
     def _publish_phase(phase: str, intent: Optional[str] = None, **extra: Any) -> None:
         payload: dict[str, Any] = {
@@ -228,12 +430,12 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
             "timestamp_ms": int(time.time() * 1000),
         }
         payload.update({k: v for k, v in extra.items() if v is not None})
-        _publish_data("voca.session", payload)
+        _publish_data_bg("voca.session", payload)
 
     def _publish_chat(role: str, message: str) -> None:
         if not message:
             return
-        _publish_data(
+        _publish_data_bg(
             "voca.chat",
             {
                 "id": uuid4().hex,
@@ -278,7 +480,7 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
             )
         )
         telemetry.set_budget_mode(budget_manager.current_mode())
-        _publish_data("voca.metrics", telemetry.snapshot())
+        _publish_data_bg("voca.metrics", telemetry.snapshot())
         logger.debug(
             "Metrics updated",
             extra={
@@ -316,6 +518,7 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
     def _handle_transcript_event(ev: UserInputTranscribedEvent) -> None:
         nonlocal is_agent_speaking
         nonlocal last_turn_activity_ms
+        nonlocal last_detected_language
 
         user_text = (ev.transcript or "").strip()
         if not user_text:
@@ -327,14 +530,34 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
         is_partial, extracted_confidence = _extract_partial_confidence(ev, partial=is_partial)
         partial_confidence = extracted_confidence
 
+        detected = extract_language(ev)
+        resolved_language = _resolve_detected_language(
+            user_text,
+            detected,
+            last_detected_language=last_detected_language,
+        )
+
         if turn_manager.should_interrupt(is_agent_speaking):
             if latest_speech_handle is not None:
-                try:
+                with suppress(Exception):
                     latest_speech_handle.interrupt(force=True)
-                except Exception:
-                    pass
             is_agent_speaking = False
             logger.info("User interruption detected; prioritizing new turn")
+
+        # For FINAL transcripts only, run a fast best-effort language ID to support
+        # Latin-script languages where streaming STT doesn't emit language.
+        if not is_partial:
+            # We don't block the event loop here; instead, the per-turn pipeline will
+            # prefer `last_detected_language` if the detection finishes first.
+            async def _update_lang() -> None:
+                nonlocal last_detected_language
+                last_detected_language = await _llm_detect_language(user_text, fallback=resolved_language)
+
+            task = asyncio.create_task(_update_lang())
+            background_tasks.add(task)
+            task.add_done_callback(background_tasks.discard)
+        else:
+            last_detected_language = resolved_language
 
         turn_input: TurnInput = {
             "session_id": runtime_session_id,
@@ -343,8 +566,11 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
             "partial": is_partial,
             "partial_confidence": partial_confidence,
             "timestamp_ms": int(time.time() * 1000),
-            "detected_language": getattr(ev, 'detected_language', None),
+            "detected_language": resolved_language,
+            "language": resolved_language,
         }
+        logger.info("Transcript: %s", user_text)
+        logger.info("Detected language (pre-turn): %s", resolved_language)
         logger.info(
             "Transcript received",
             extra={
@@ -399,26 +625,26 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
             started = time.perf_counter()
 
             try:
-                # Extract detected language from transcript event
-                # Deepgram provides language info in ev.language or ev.detected_language
-                event_detected_lang = getattr(ev, 'language', None) or getattr(ev, 'detected_language', None)
-                
+                # Extract detected language from transcript event (normalized ISO-639 primary code).
+                # Use the latest stable language for this session when possible.
+                event_detected_lang = last_detected_language or resolved_language
+
                 # Update configuration if language changed and is supported
                 if event_detected_lang and event_detected_lang in SUPPORTED_LANGUAGES:
                     current_lang = get_language(current_config)
                     if event_detected_lang != current_lang:
                         logger.info(f"Language switched from {current_lang} to {event_detected_lang}")
                         detected_language = event_detected_lang
-                        
+
                         # Update configuration
                         updated_config = resolve_final_config(user_config, event_detected_lang)
                         current_config = updated_config
-                        
+
                         # Update TTS if needed
                         new_tts = multilingual_tts_service.update_tts_for_language(event_detected_lang, current_config)
                         if new_tts:
                             humanized_tts.update_tts(new_tts)
-                            
+
                         # Update agent instructions
                         new_prompt = get_dynamic_system_prompt(current_config)
                         session.update_instructions(new_prompt)
@@ -426,7 +652,15 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
                     # Log detected language even if not supported
                     if event_detected_lang:
                         logger.debug(f"Detected unsupported language: {event_detected_lang}")
-                
+                        # Unsupported language -> fallback to English safely.
+                        current_config = resolve_final_config(user_config, "en")
+                        session.update_instructions(get_dynamic_system_prompt(current_config))
+                        event_detected_lang = "en"
+                        detected_language = "en"
+
+                logger.info("LLM language: %s", get_language(current_config))
+                logger.info("TTS voice: %s", get_voice(current_config))
+                logger.info("Role: %s", get_role(current_config))
                 logger.info("Orchestrator triggered", extra={"room_name": ctx.room.name, "session_id": runtime_session_id, "language": get_language(current_config)})
                 output = await asyncio.to_thread(session_orchestrator.handle_turn, turn_input)
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
@@ -447,7 +681,7 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
                     },
                 )
 
-                _publish_data(
+                _publish_data_bg(
                     "voca.session",
                     {
                         "session_id": runtime_session_id,
@@ -465,11 +699,43 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
                     logger.error("No speech_text produced; emitting fallback", extra={"room_name": ctx.room.name, "session_id": runtime_session_id})
                     speech_text = enhanced_fallback_service.handle_missing_config(get_language(current_config))
 
+                # Ensure the final spoken response matches the detected language
+                target_language = get_language(current_config)
+                if target_language != "en":
+                    rewritten = await _rewrite_for_language(
+                        speech_text,
+                        transcript=user_text,
+                        language=target_language,
+                        config=current_config,
+                    )
+                    speech_text = rewritten or speech_text
+
                 is_agent_speaking = True
                 _publish_phase("speaking", intent=output["intent"])
                 _publish_chat("agent", speech_text)
                 logger.info("TTS started", extra={"room_name": ctx.room.name, "session_id": runtime_session_id, "chars": len(speech_text)})
-                await humanized_tts.say(speech_text, allow_interruptions=True)
+                try:
+                    await humanized_tts.say(speech_text, allow_interruptions=True)
+                except Exception as tts_err:
+                    logger.warning(
+                        "Primary TTS failed; retrying with fallback voice",
+                        extra={"error": str(tts_err), "language": get_language(current_config)},
+                    )
+                    try:
+                        fallback_voice = multilingual_tts_service.get_fallback_voice(get_language(current_config))
+                        if multilingual_tts_service.validate_voice_id(fallback_voice):
+                            retry_tts = murf.TTS(
+                                voice=fallback_voice,
+                                style="Conversational",
+                                speed=-4,
+                                pitch=0,
+                                text_pacing=True,
+                            )
+                            humanized_tts.update_tts(retry_tts)
+                        retry_text = enhanced_fallback_service.handle_tts_failure(get_language(current_config))
+                        await humanized_tts.say(retry_text, allow_interruptions=True)
+                    except Exception:
+                        pass
                 is_agent_speaking = False
                 _publish_phase("listening", intent=output["intent"])
             except Exception as err:
@@ -486,7 +752,9 @@ async def entrypoint(ctx: JobContext, user_config: dict = None):
             finally:
                 guard_task.cancel()
 
-        asyncio.create_task(_run_turn_pipeline())
+        task = asyncio.create_task(_run_turn_pipeline())
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
 
     async def log_usage():
         summary = usage_collector.get_summary()

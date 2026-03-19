@@ -10,8 +10,8 @@ Provides comprehensive configuration management with:
 """
 
 import logging
-from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("voca.config")
 
@@ -20,7 +20,7 @@ logger = logging.getLogger("voca.config")
 VOICE_MAP = {
     "en": "en-US-natalie",
     "hi": "hi-IN-aditi",
-    "ta": "ta-IN-kavitha", 
+    "ta": "ta-IN-kavitha",
     "es": "es-ES-laura",
     "fr": "fr-FR-natalie",
     "ar": "ar-SA-fatima",
@@ -42,7 +42,7 @@ VALID_ROLES = ["receptionist", "sales", "support", "assistant"]
 # Available voices for validation
 AVAILABLE_VOICES = list(VOICE_MAP.values()) + [
     "en-US-matthew",
-    "en-US-brian", 
+    "en-US-brian",
     "en-US-samantha",
     "en-GB-ryan",
     "en-GB-serena"
@@ -56,7 +56,7 @@ class CompanyConfig:
     description: str = "A smart AI voice assistant that helps users with tasks, scheduling, and information."
     services: List[str] = field(default_factory=lambda: [
         "answer questions",
-        "schedule appointments", 
+        "schedule appointments",
         "provide information"
     ])
     faq: List[str] = field(default_factory=list)
@@ -76,7 +76,7 @@ class AgentConfig:
 # Default agent configuration
 DEFAULT_AGENT_CONFIG = {
     "voice_id": "en-US-natalie",
-    "language": "en", 
+    "language": "en",
     "role": "receptionist",
     "tone": "friendly",
     "company": {
@@ -106,16 +106,16 @@ def merge_config(user_config: Optional[Dict[str, Any]], default_config: Dict[str
     """
     if not user_config:
         return default_config.copy()
-    
+
     def _deep_merge(default: Dict[str, Any], user: Dict[str, Any]) -> Dict[str, Any]:
         """Recursively merge two dictionaries."""
         result = default.copy()
-        
+
         for key, user_value in user.items():
             # Skip None/undefined values
             if user_value is None:
                 continue
-                
+
             if key in result:
                 if isinstance(result[key], dict) and isinstance(user_value, dict):
                     # Recursively merge nested dictionaries
@@ -126,9 +126,9 @@ def merge_config(user_config: Optional[Dict[str, Any]], default_config: Dict[str
             else:
                 # Add new key from user
                 result[key] = user_value
-                
+
         return result
-    
+
     return _deep_merge(default_config, user_config)
 
 
@@ -143,32 +143,32 @@ def validate_agent_config(config: Dict[str, Any]) -> Dict[str, Any]:
         Validated configuration with fixes applied
     """
     validated_config = config.copy()
-    
+
     # Validate role
     if "role" in validated_config:
         role = validated_config["role"]
         if role not in VALID_ROLES:
             logger.warning(f"Invalid role '{role}', falling back to 'receptionist'")
             validated_config["role"] = "receptionist"
-    
+
     # Validate voice_id
     if "voice_id" in validated_config:
         voice_id = validated_config["voice_id"]
         if voice_id not in AVAILABLE_VOICES:
             logger.warning(f"Invalid voice_id '{voice_id}', falling back to 'en-US-natalie'")
             validated_config["voice_id"] = "en-US-natalie"
-    
+
     # Validate language
     if "language" in validated_config:
         language = validated_config["language"]
         if language not in SUPPORTED_LANGUAGES:
             logger.warning(f"Invalid language '{language}', falling back to 'en'")
             validated_config["language"] = "en"
-    
+
     # Ensure company section exists
     if "company" not in validated_config:
         validated_config["company"] = DEFAULT_AGENT_CONFIG["company"].copy()
-    
+
     return validated_config
 
 
@@ -186,7 +186,7 @@ def get_voice_for_language(language: str, preferred_voice: Optional[str] = None)
     # If user specified a valid voice, use it
     if preferred_voice and preferred_voice in AVAILABLE_VOICES:
         return preferred_voice
-    
+
     # Otherwise use language mapping
     return VOICE_MAP.get(language, VOICE_MAP["en"])
 
@@ -204,23 +204,23 @@ def resolve_final_config(user_config: Optional[Dict[str, Any]], detected_languag
     """
     # Start with default + user merge
     merged_config = merge_config(user_config, DEFAULT_AGENT_CONFIG)
-    
+
     # Validate the merged config
     validated_config = validate_agent_config(merged_config)
-    
+
     # Override language if detected
     if detected_language and detected_language in SUPPORTED_LANGUAGES:
         logger.info(f"Detected language: {detected_language}")
         validated_config["language"] = detected_language
-        
+
         # Update voice to match detected language if no user preference
         user_voice = user_config.get("voice_id") if user_config else None
         if not user_voice or user_voice not in AVAILABLE_VOICES:
             validated_config["voice_id"] = get_voice_for_language(detected_language)
             logger.info(f"Using voice: {validated_config['voice_id']}")
-    
+
     logger.info(f"Final config - Role: {validated_config['role']}, Language: {validated_config['language']}, Voice: {validated_config['voice_id']}")
-    
+
     return validated_config
 
 
@@ -258,7 +258,7 @@ def generate_multilingual_system_prompt(config: Dict[str, Any]) -> str:
     role = get_role(config)
     language = get_language(config)
     company = get_company(config)
-    
+
     prompt = f"""You are a {role} for {company['name']}.
 
 Company details:
@@ -271,12 +271,18 @@ Instructions:
 {company['custom_instructions']}
 
 Rules:
+- You MUST respond ONLY in {language}.
+- Do NOT switch to English.
+- If the user changes language, follow immediately.
 - Always respond in {language}
 - Match user's language automatically
 - Adapt if language changes mid-conversation
 - Be natural and human-like
 - Use short spoken sentences
+- Use a warm, conversational tone (not formal, not robotic)
+- Add occasional natural fillers when appropriate (e.g., "Okay...", "Alright...", "Hmm...")
+- Use natural pauses with ellipses (...) sparingly
 - Stay in character as company representative
 - Do NOT sound like an AI"""
-    
+
     return prompt.strip()

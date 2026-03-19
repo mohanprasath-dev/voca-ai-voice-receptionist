@@ -25,9 +25,10 @@ class HumanizedTTSStreamer:
         self._murf_tts = murf_tts
         self._rng = rng or random.Random()
         self._current_speech_handle = None
+        self._tts_lock = asyncio.Lock()
 
         # Baseline conversational style.
-        self._murf_tts.update_options(style="Conversational", speed=-8, pitch=0)
+        self._murf_tts.update_options(style="Conversational", speed=-4, pitch=0)
 
     async def say(
         self,
@@ -42,6 +43,10 @@ class HumanizedTTSStreamer:
 
         async def chunk_stream():
             previous_chunk: Optional[str] = None
+            # Capture a stable TTS reference for the whole utterance so that
+            # mid-stream voice updates don't glitch playback.
+            async with self._tts_lock:
+                tts = self._murf_tts
 
             for raw_chunk in iter_response_chunks(cleaned):
                 if previous_chunk is not None:
@@ -49,9 +54,10 @@ class HumanizedTTSStreamer:
                     await asyncio.sleep(pause_ms / 1000)
 
                 # Add subtle per-chunk prosody variation.
-                self._murf_tts.update_options(
+                tts.update_options(
                     style="Conversational",
-                    speed=-8,
+                    # Keep pace closer to natural speech, with light variation.
+                    speed=self._rng.randint(-5, -2),
                     pitch=self._rng.randint(-1, 2),
                 )
 
@@ -83,6 +89,17 @@ class HumanizedTTSStreamer:
         Args:
             new_murf_tts: New Murf TTS instance
         """
-        self._murf_tts = new_murf_tts
-        # Reapply conversational style
-        self._murf_tts.update_options(style="Conversational", speed=-8, pitch=0)
+        async def _swap() -> None:
+            async with self._tts_lock:
+                self._murf_tts = new_murf_tts
+                # Reapply conversational style baseline
+                self._murf_tts.update_options(style="Conversational", speed=-4, pitch=0)
+
+        # Swap safely without interrupting current stream.
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(_swap())
+        except RuntimeError:
+            # If called outside of an event loop, do a best-effort synchronous swap.
+            self._murf_tts = new_murf_tts
+            self._murf_tts.update_options(style="Conversational", speed=-4, pitch=0)

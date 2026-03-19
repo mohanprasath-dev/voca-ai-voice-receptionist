@@ -33,7 +33,7 @@ def iter_response_chunks(text: str) -> Iterator[str]:
         yield from _split_long_chunk(cleaned)
 
 
-def _split_long_chunk(chunk: str, max_words: int = 12) -> Iterator[str]:
+def _split_long_chunk(chunk: str, max_words: int = 16) -> Iterator[str]:
     words = chunk.split()
     if len(words) <= max_words:
         yield chunk
@@ -61,12 +61,12 @@ def pause_after_chunk_ms(previous_chunk: str, rng: random.Random) -> int:
         return 250
 
     if stripped.endswith(","):
-        return 200
+        return 140
 
     if stripped.endswith((".", "?", "!", "...")):
-        return rng.randint(300, 500)
+        return rng.randint(220, 380)
 
-    return 250
+    return 180
 
 
 def apply_moderate_emphasis(text: str) -> str:

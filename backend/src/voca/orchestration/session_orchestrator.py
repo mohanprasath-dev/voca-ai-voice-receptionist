@@ -1,8 +1,15 @@
 from time import time
 from typing import Optional
 
-from voca.api.contracts import BudgetMode, RouteAction, SessionState, Tone, TurnInput, TurnOutput
-from voca.app_config import AppConfig, DEFAULT_CONFIG
+from voca.api.contracts import (
+    BudgetMode,
+    RouteAction,
+    SessionState,
+    Tone,
+    TurnInput,
+    TurnOutput,
+)
+from voca.app_config import DEFAULT_CONFIG, AppConfig
 from voca.domain.state_store import InMemorySessionStore
 from voca.orchestration.context_memory import ContextMemory
 from voca.orchestration.experience_controller import ExperienceController
@@ -48,10 +55,16 @@ class SessionOrchestrator:
         state = self.store.get_or_create(turn["session_id"])
         state.phase = "listening"
         state.turn_count += 1
+
+        detected_lang = (turn.get("detected_language") or turn.get("language") or turn.get("language_hint") or "").strip()
+        if detected_lang:
+            state.last_detected_language = detected_lang
+            state.user_language = detected_lang
+            state.language = detected_lang
         self.memory.update_summary(state, turn["user_text"])
 
         if self.budget.is_blocked():
-            text = "I’m at my usage limit for this demo session. Please try again later."
+            text = "I'm at my usage limit for this demo session. Please try again later."
             state.last_agent_message = text
             state.phase = "speaking"
             self.store.save(state)

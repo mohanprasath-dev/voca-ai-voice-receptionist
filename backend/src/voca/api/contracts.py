@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Literal, Optional, TypedDict, Any
+from typing import Any, Dict, List, Literal, Optional, TypedDict
 
 
 class Intent(str, Enum):
@@ -41,6 +41,7 @@ class TurnInput(TypedDict):
     session_id: str
     user_text: str
     language_hint: Optional[str]
+    language: Optional[str]
     partial: bool
     partial_confidence: Optional[float]
     timestamp_ms: int
