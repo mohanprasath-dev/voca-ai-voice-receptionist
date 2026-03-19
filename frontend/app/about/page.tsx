@@ -86,7 +86,7 @@ export default function AboutPage() {
                   <h3 className="text-2xl font-black text-white mb-3">Mohan Prasath P</h3>
                   <p className="text-sm leading-relaxed text-white/50 mb-6">
                     AI Engineer and Builder. 1st-year B.Tech CSE (AI &amp; ML) student at
-                    B.S.A. Crescent Institute × NIAT, Chennai. Built Voca as a hackathon
+                    NIAT x Crescent, Chennai. Built Voca as a Murf AI hackathon
                     project to demonstrate the full real-time voice AI pipeline.
                   </p>
                   <div className="flex items-center gap-5">
