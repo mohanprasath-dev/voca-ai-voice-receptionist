@@ -29,7 +29,7 @@ export const WelcomeView = ({
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', damping: 15 }}
-          className="mb-8 inline-flex size-16 items-center justify-center rounded-2xl border border-white/15 bg-white/8 shadow-[0_0_40px_rgba(34,211,238,0.15)]"
+          className="mb-8 inline-flex size-16 items-center justify-center rounded-2xl border border-white/15 bg-white/8 shadow-[0_0_40px_rgba(34,211,238,0.12)]"
         >
           <Icons.WaveformIcon className="size-7 text-cyan-400" weight="duotone" />
         </motion.div>
@@ -44,15 +44,15 @@ export const WelcomeView = ({
           />
         </div>
 
-        {/* Sub */}
+        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           className="mx-auto max-w-md text-base leading-relaxed text-white/60"
         >
-          Speak naturally in English, Hindi, or Tamil. Interrupt anytime.
-          Powered by Murf Falcon TTS for sub-150ms responses.
+          Speak naturally in any language. Interrupt anytime.
+          Powered by Murf Falcon for sub-150ms multilingual responses.
         </motion.p>
 
         {/* CTA */}
@@ -65,7 +65,7 @@ export const WelcomeView = ({
           <Button
             size="lg"
             onClick={onStartCall}
-            className="h-14 rounded-2xl bg-white px-12 font-bold tracking-wide text-black shadow-[0_0_30px_rgba(255,255,255,0.12)] transition-all duration-200 hover:scale-[1.02] hover:bg-white/92 active:scale-[0.98]"
+            className="h-14 rounded-2xl bg-white px-12 font-bold tracking-wide text-black shadow-[0_0_30px_rgba(255,255,255,0.12)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
             <span className="flex items-center gap-2">
               {startButtonText}
@@ -84,16 +84,33 @@ export const WelcomeView = ({
           className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-3"
         >
           {[
-            { icon: Icons.MicrophoneIcon,   label: 'Voice Enabled',    sub: 'Deepgram Nova-3 STT',       color: 'text-emerald-400' },
-            { icon: Icons.TranslateIcon,    label: 'EN · HI · TA',     sub: 'Auto language switch',      color: 'text-cyan-400' },
-            { icon: Icons.WaveformIcon,     label: 'Murf Falcon TTS',  sub: '< 150ms voice response',    color: 'text-purple-400' },
+            {
+              icon: Icons.MicrophoneIcon,
+              label: 'Voice Enabled',
+              sub: 'Deepgram Nova-3 STT',
+              color: 'text-emerald-400',
+            },
+            {
+              icon: Icons.TranslateIcon,
+              label: 'Multilingual',
+              sub: 'Auto language detection',
+              color: 'text-cyan-400',
+            },
+            {
+              icon: Icons.WaveformIcon,
+              label: 'Murf Falcon TTS',
+              sub: '< 150ms voice synthesis',
+              color: 'text-purple-400',
+            },
           ].map((item, i) => (
             <SpotlightCard
               key={i}
               className="flex flex-col items-center gap-2 border-white/8 bg-black/30 p-5 backdrop-blur-md"
             >
               <item.icon className={`size-5 ${item.color}`} weight="duotone" />
-              <span className="text-[11px] font-black tracking-widest text-white uppercase">{item.label}</span>
+              <span className="text-[11px] font-black tracking-widest text-white uppercase">
+                {item.label}
+              </span>
               <span className="text-[10px] text-white/35">{item.sub}</span>
             </SpotlightCard>
           ))}

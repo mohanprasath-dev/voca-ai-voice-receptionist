@@ -28,13 +28,13 @@ export const Hero = () => {
           >
             <div className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
             <span className="text-[10px] font-bold tracking-[0.2em] text-cyan-300 uppercase">
-              Murf Falcon · Deepgram · Gemini 2.5
+              Murf Falcon · Deepgram Nova-3 · Gemini 2.5
             </span>
           </motion.div>
 
           {/* Title */}
           <div className="text-center">
-            <h1 className="sr-only">VOCA — AI Voice Agent</h1>
+            <h1 className="sr-only">VOCA — Multilingual AI Voice Agent</h1>
             <div className="flex justify-center mb-4">
               <BlurText
                 text="VOCA"
@@ -50,7 +50,7 @@ export const Hero = () => {
               transition={{ delay: 0.5 }}
               className="mx-auto mt-4 max-w-xl text-lg font-medium text-white/65 sm:text-xl"
             >
-              Real-time AI voice agent. Speak in English, Hindi, or Tamil —
+              Real-time multilingual AI voice agent. Speak in any language —
               it understands, responds, and adapts instantly.
             </motion.p>
 
@@ -74,7 +74,7 @@ export const Hero = () => {
             </motion.div>
           </div>
 
-          {/* Tech stack cards */}
+          {/* Feature cards */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,15 +84,15 @@ export const Hero = () => {
             {[
               {
                 title: '< 130ms Latency',
-                desc: 'Murf Falcon model delivers the fastest production TTS — responses feel instant.',
+                desc: 'Murf Falcon delivers the fastest production TTS — responses feel instant and natural.',
               },
               {
-                title: 'EN · HI · TA',
-                desc: 'Speaks and understands English, Hindi, and Tamil with automatic language switching.',
+                title: 'Multilingual',
+                desc: 'Automatic language detection. Seamlessly switch languages mid-conversation.',
               },
               {
                 title: 'Interrupt Anytime',
-                desc: 'Full barge-in support via LiveKit WebRTC. You control the conversation.',
+                desc: 'Full barge-in support via LiveKit WebRTC. You stay in control of the conversation.',
               },
             ].map((card, i) => (
               <SpotlightCard

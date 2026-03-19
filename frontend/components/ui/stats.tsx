@@ -4,15 +4,15 @@ import { motion } from 'motion/react';
 import { Container } from './container';
 
 const STATS = [
-  { label: 'Voice Latency', value: '<130ms', note: 'Murf Falcon model' },
-  { label: 'Languages', value: '13', note: 'EN · HI · TA + 10 more' },
-  { label: 'STT Engine', value: 'Nova-3', note: 'Deepgram multilingual' },
-  { label: 'LLM', value: 'Gemini', note: '2.5 Flash · real-time' },
+  { label: 'Voice Latency',   value: '<130ms',   note: 'Murf Falcon model' },
+  { label: 'Languages',       value: '13+',       note: 'Multilingual · auto-detect' },
+  { label: 'STT Engine',      value: 'Nova-3',    note: 'Deepgram multilingual' },
+  { label: 'LLM',             value: 'Gemini',    note: '2.5 Flash · real-time' },
 ];
 
 export const Stats = () => {
   return (
-    <section className="border-y border-white/6 py-20" style={{ background: 'rgba(0,0,0,0.35)' }}>
+    <section className="border-y border-white/6 py-20" style={{ background: 'rgba(0,0,0,0.4)' }}>
       <Container>
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {STATS.map((stat, index) => (

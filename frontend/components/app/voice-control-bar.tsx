@@ -2,7 +2,6 @@
 
 import { type HTMLAttributes, useCallback, useState } from 'react';
 import { Track } from 'livekit-client';
-import { useRemoteParticipants } from '@livekit/components-react';
 import {
   ChatTextIcon,
   MicrophoneIcon,
@@ -29,18 +28,16 @@ export function VoiceControlBar({
   className,
   ...props
 }: VoiceControlBarProps & HTMLAttributes<HTMLDivElement>) {
-  const participants = useRemoteParticipants();
   const [internalChatOpen, setInternalChatOpen] = useState(false);
   const chatOpen = isChatOpen !== undefined ? isChatOpen : internalChatOpen;
   const { isSessionActive, endSession } = useSession();
-
   const { microphoneToggle } = useInputControls({ onDeviceError });
 
   const handleToggleTranscript = useCallback(() => {
-    const newState = !chatOpen;
-    setInternalChatOpen(newState);
-    onChatOpenChange?.(newState);
-  }, [onChatOpenChange, chatOpen]);
+    const next = !chatOpen;
+    setInternalChatOpen(next);
+    onChatOpenChange?.(next);
+  }, [chatOpen, onChatOpenChange]);
 
   const handleDisconnect = useCallback(async () => {
     endSession();
@@ -50,7 +47,7 @@ export function VoiceControlBar({
   return (
     <div
       className={cn(
-        'mx-auto flex w-fit max-w-sm min-w-[320px] items-center justify-between gap-3 rounded-full border border-white/10 bg-black/40 p-2.5 shadow-[0_0_50px_rgba(255,255,255,0.05)] backdrop-blur-3xl transition-all duration-300 md:gap-4',
+        'mx-auto flex w-fit min-w-[300px] items-center justify-between gap-3 rounded-full border border-white/10 bg-black/50 p-2.5 backdrop-blur-3xl transition-all duration-300 md:gap-4',
         className
       )}
       {...props}
@@ -61,7 +58,7 @@ export function VoiceControlBar({
           size="icon"
           className="size-12 rounded-full"
           onClick={() => microphoneToggle.toggle()}
-          aria-label={microphoneToggle.enabled ? 'Mute' : 'Unmute'}
+          aria-label={microphoneToggle.enabled ? 'Mute microphone' : 'Unmute microphone'}
         >
           {microphoneToggle.enabled ? (
             <MicrophoneIcon weight="bold" className="size-5" />
@@ -86,10 +83,10 @@ export function VoiceControlBar({
         size="md"
         onClick={handleDisconnect}
         disabled={!isSessionActive}
-        className="h-12 min-w-30 flex-1 rounded-full text-[11px] font-black tracking-widest uppercase md:text-xs"
+        className="h-12 flex-1 rounded-full px-6 text-[11px] font-black tracking-widest uppercase md:text-xs"
       >
-        <PhoneDisconnectIcon weight="bold" className="size-4" />
-        Stop
+        <PhoneDisconnectIcon weight="bold" className="size-4 mr-1.5" />
+        End Call
       </GlassButton>
     </div>
   );

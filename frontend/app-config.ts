@@ -21,19 +21,19 @@ export interface AppConfig {
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
   companyName: 'Voca',
-  pageTitle: 'Voca AI Receptionist',
-  pageDescription: 'A real-time voice-first AI receptionist powered by Murf Falcon',
+  pageTitle: 'Voca — Multilingual AI Voice Agent',
+  pageDescription: 'Real-time multilingual AI voice agent powered by Murf Falcon, Deepgram, and Gemini',
 
   supportsChatInput: true,
   supportsVideoInput: false,
   supportsScreenShare: false,
   isPreConnectBufferEnabled: true,
 
-  logo: '/lk-logo.svg',
-  accent: '#002cf2',
-  logoDark: '/lk-logo-dark.svg',
-  accentDark: '#1fd5f9',
-  startButtonText: 'Start Voice Receptionist',
+  logo: '/favicon.svg',
+  accent: '#06b6d4',
+  logoDark: '/favicon.svg',
+  accentDark: '#06b6d4',
+  startButtonText: 'Start Voice Session',
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,

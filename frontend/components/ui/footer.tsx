@@ -16,7 +16,7 @@ export const Footer = () => {
               <span className="text-[15px] font-black tracking-[0.3em] text-white">VOCA</span>
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/45">
-              Real-time AI voice agent platform. Speak naturally in English, Hindi, or Tamil —
+              Real-time multilingual AI voice agent. Speak in any language —
               Voca understands, responds, and adapts instantly.
             </p>
           </div>
@@ -26,10 +26,10 @@ export const Footer = () => {
             <h4 className="text-[10px] font-black tracking-[0.2em] text-white/40 uppercase mb-5">Product</h4>
             <ul className="space-y-3 text-sm">
               {[
-                { label: 'Home', href: '/' },
-                { label: 'Live Demo', href: '/demo' },
-                { label: 'Dashboard', href: '/dashboard' },
-                { label: 'About', href: '/about' },
+                { label: 'Home',       href: '/' },
+                { label: 'Live Demo',  href: '/demo' },
+                { label: 'Dashboard',  href: '/dashboard' },
+                { label: 'About',      href: '/about' },
               ].map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className="text-white/45 hover:text-white transition-colors">
@@ -46,31 +46,16 @@ export const Footer = () => {
             <p className="text-sm font-semibold text-white">Mohan Prasath P</p>
             <p className="mt-1 text-xs text-white/40">AI Engineer &amp; Builder</p>
             <div className="mt-4 flex items-center gap-4">
-              <a
-                href="https://github.com/mohanprasath-dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white/35 hover:text-white transition-colors"
-                aria-label="GitHub"
-              >
+              <a href="https://github.com/mohanprasath-dev" target="_blank" rel="noopener noreferrer"
+                className="text-white/35 hover:text-white transition-colors" aria-label="GitHub">
                 <Icons.GithubLogoIcon size={18} weight="fill" />
               </a>
-              <a
-                href="https://linkedin.com/in/mohanprasath21"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white/35 hover:text-white transition-colors"
-                aria-label="LinkedIn"
-              >
+              <a href="https://linkedin.com/in/mohanprasath21" target="_blank" rel="noopener noreferrer"
+                className="text-white/35 hover:text-white transition-colors" aria-label="LinkedIn">
                 <Icons.LinkedinLogoIcon size={18} weight="fill" />
               </a>
-              <a
-                href="https://www.mohanprasath.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white/35 hover:text-white transition-colors"
-                aria-label="Portfolio"
-              >
+              <a href="https://www.mohanprasath.dev" target="_blank" rel="noopener noreferrer"
+                className="text-white/35 hover:text-white transition-colors" aria-label="Portfolio">
                 <Icons.GlobeIcon size={18} weight="fill" />
               </a>
             </div>

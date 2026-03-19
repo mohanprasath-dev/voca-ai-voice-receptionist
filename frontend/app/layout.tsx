@@ -38,17 +38,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {styles && <style>{styles}</style>}
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <ApplyThemeScript />
       </head>
       <body className="overflow-x-hidden" style={{ backgroundColor: '#030303', color: '#f8fafc' }}>
-        {/* Aurora WebGL background — renders globally across all pages */}
         <Aurora
           colorStops={['#06b6d4', '#3b82f6', '#7c3aed']}
-          amplitude={1.2}
-          blend={0.45}
-          speed={0.35}
+          amplitude={0.40}
+          blend={1.00}
+          speed={0.3}
+          opacity={0.75}
         />
-        {/* Page content */}
         <div className="relative z-10 min-h-screen">
           {children}
         </div>
