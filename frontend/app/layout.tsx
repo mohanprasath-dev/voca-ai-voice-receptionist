@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { headers } from 'next/headers';
 import { ApplyThemeScript } from '@/components/app/theme-toggle';
 import { cn, getAppConfig, getStyles } from '@/lib/utils';
+import { Aurora } from '@/components/reactbits/Aurora';
 import '@/styles/globals.css';
 
 const publicSans = Public_Sans({
@@ -14,36 +15,14 @@ const commitMono = localFont({
   display: 'swap',
   variable: '--font-commit-mono',
   src: [
-    {
-      path: '../fonts/CommitMono-400-Regular.otf',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../fonts/CommitMono-700-Regular.otf',
-      weight: '700',
-      style: 'normal',
-    },
-    {
-      path: '../fonts/CommitMono-400-Italic.otf',
-      weight: '400',
-      style: 'italic',
-    },
-    {
-      path: '../fonts/CommitMono-700-Italic.otf',
-      weight: '700',
-      style: 'italic',
-    },
+    { path: '../fonts/CommitMono-400-Regular.otf', weight: '400', style: 'normal' },
+    { path: '../fonts/CommitMono-700-Regular.otf', weight: '700', style: 'normal' },
+    { path: '../fonts/CommitMono-400-Italic.otf',  weight: '400', style: 'italic' },
+    { path: '../fonts/CommitMono-700-Italic.otf',  weight: '700', style: 'italic' },
   ],
 });
 
-import { Aurora } from '@/components/reactbits/Aurora';
-
-interface RootLayoutProps {
-  children: React.ReactNode;
-}
-
-export default async function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const hdrs = await headers();
   const appConfig = await getAppConfig(hdrs);
   const { pageTitle, pageDescription } = appConfig;
@@ -53,11 +32,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(
-        publicSans.variable,
-        commitMono.variable,
-        'scroll-smooth font-sans antialiased'
-      )}
+      className={cn(publicSans.variable, commitMono.variable, 'scroll-smooth font-sans antialiased')}
     >
       <head>
         {styles && <style>{styles}</style>}
@@ -65,18 +40,17 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <meta name="description" content={pageDescription} />
         <ApplyThemeScript />
       </head>
-      <body className="overflow-x-hidden bg-[#030303]">
-        <div className="relative min-h-screen">
-          <Aurora
-            className="fixed inset-0 -z-10 h-full w-full"
-            colorStops={['#06b6d4', '#3b82f6', '#7c3aed']}
-            amplitude={1.0}
-            blend={0.5}
-            speed={0.4}
-          />
-          <main className="relative z-10 flex flex-col min-h-screen">
-            {children}
-          </main>
+      <body className="overflow-x-hidden" style={{ backgroundColor: '#030303', color: '#f8fafc' }}>
+        {/* Aurora WebGL background — renders globally across all pages */}
+        <Aurora
+          colorStops={['#06b6d4', '#3b82f6', '#7c3aed']}
+          amplitude={1.2}
+          blend={0.45}
+          speed={0.35}
+        />
+        {/* Page content */}
+        <div className="relative z-10 min-h-screen">
+          {children}
         </div>
       </body>
     </html>

@@ -5,96 +5,72 @@ import * as Icons from '@phosphor-icons/react';
 import { THEME_MEDIA_QUERY, THEME_STORAGE_KEY, cn } from '@/lib/utils';
 
 const THEME_SCRIPT = `
-  const doc = document.documentElement;
-  const theme = localStorage.getItem("${THEME_STORAGE_KEY}") ?? "system";
-
-  if (theme === "system") {
-    if (window.matchMedia("${THEME_MEDIA_QUERY}").matches) {
-      doc.classList.add("dark");
+  (function(){
+    var doc = document.documentElement;
+    var theme = localStorage.getItem("${THEME_STORAGE_KEY}") || "dark";
+    doc.classList.remove("dark","light");
+    if(theme==="system"){
+      doc.classList.add(window.matchMedia("${THEME_MEDIA_QUERY}").matches?"dark":"light");
     } else {
-      doc.classList.add("light");
+      doc.classList.add(theme);
     }
-  } else {
-    doc.classList.add(theme);
-  }
-`
-  .trim()
-  .replace(/\n/g, '')
-  .replace(/\s+/g, ' ');
+  })();
+`.trim();
 
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 function applyTheme(theme: ThemeMode) {
   const doc = document.documentElement;
-
   doc.classList.remove('dark', 'light');
   localStorage.setItem(THEME_STORAGE_KEY, theme);
-
   if (theme === 'system') {
-    if (window.matchMedia(THEME_MEDIA_QUERY).matches) {
-      doc.classList.add('dark');
-    } else {
-      doc.classList.add('light');
-    }
+    doc.classList.add(window.matchMedia(THEME_MEDIA_QUERY).matches ? 'dark' : 'light');
   } else {
     doc.classList.add(theme);
   }
 }
 
-interface ThemeToggleProps {
-  className?: string;
-}
-
 export function ApplyThemeScript() {
-  return <script id="theme-script">{THEME_SCRIPT}</script>;
+  return <script id="theme-script" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />;
 }
 
-export function ThemeToggle({ className }: ThemeToggleProps) {
-  const [theme, setTheme] = useState<ThemeMode | undefined>(undefined);
+export function ThemeToggle({ className }: { className?: string }) {
+  const [theme, setTheme] = useState<ThemeMode>('dark');
 
   useEffect(() => {
-    const storedTheme = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) ?? 'system';
-
-    setTheme(storedTheme);
+    const stored = (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) || 'dark';
+    setTheme(stored);
   }, []);
 
-  function handleThemeChange(theme: ThemeMode) {
-    applyTheme(theme);
-    setTheme(theme);
+  function handle(t: ThemeMode) {
+    applyTheme(t);
+    setTheme(t);
   }
 
   return (
     <div
       className={cn(
-        'text-foreground bg-background flex w-full flex-row justify-end divide-x overflow-hidden rounded-full border',
+        'flex flex-row divide-x divide-white/10 overflow-hidden rounded-full border border-white/10 bg-black/40',
         className
       )}
     >
-      <span className="sr-only">Color scheme toggle</span>
-      <button
-        type="button"
-        onClick={() => handleThemeChange('dark')}
-        className="cursor-pointer p-1 pl-1.5"
-      >
-        <span className="sr-only">Enable dark color scheme</span>
-        <Icons.MoonIcon size={16} weight="bold" className={cn(theme !== 'dark' && 'opacity-25')} />
-      </button>
-      <button
-        type="button"
-        onClick={() => handleThemeChange('light')}
-        className="cursor-pointer px-1.5 py-1"
-      >
-        <span className="sr-only">Enable light color scheme</span>
-        <Icons.SunIcon size={16} weight="bold" className={cn(theme !== 'light' && 'opacity-25')} />
-      </button>
-      <button
-        type="button"
-        onClick={() => handleThemeChange('system')}
-        className="cursor-pointer p-1 pr-1.5"
-      >
-        <span className="sr-only">Enable system color scheme</span>
-        <Icons.MonitorIcon size={16} weight="bold" className={cn(theme !== 'system' && 'opacity-25')} />
-      </button>
+      <span className="sr-only">Theme toggle</span>
+      {([
+        { mode: 'dark' as ThemeMode, icon: Icons.MoonIcon, label: 'Dark' },
+        { mode: 'light' as ThemeMode, icon: Icons.SunIcon, label: 'Light' },
+        { mode: 'system' as ThemeMode, icon: Icons.MonitorIcon, label: 'System' },
+      ] as const).map(({ mode, icon: Icon, label }) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => handle(mode)}
+          className="cursor-pointer px-2 py-1 hover:bg-white/5 transition-colors"
+          title={label}
+        >
+          <span className="sr-only">{label}</span>
+          <Icon size={14} weight="bold" className={cn('text-white', theme !== mode && 'opacity-25')} />
+        </button>
+      ))}
     </div>
   );
 }

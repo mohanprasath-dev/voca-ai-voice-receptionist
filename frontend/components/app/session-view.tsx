@@ -4,12 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRoomContext } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
-import { BudgetIndicator } from '@/components/app/budget-indicator';
 import { ConnectionIndicator } from '@/components/app/connection-indicator';
 import { InterruptHint } from '@/components/app/interrupt-hint';
-import { LatencyDebugPanel } from '@/components/app/latency-debug-panel';
 import { LiveMetricsPanel } from '@/components/app/live-metrics-panel';
-import { QueuePositionIndicator } from '@/components/app/queue-position-indicator';
 import { AgentConfigPanel } from '@/components/app/agent-config-panel';
 import { useSession } from '@/components/app/session-provider';
 import { TranscriptView } from '@/components/app/transcript-view';
@@ -29,7 +26,11 @@ interface SessionViewProps {
   onAnimationComplete?: () => void;
 }
 
-export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.ComponentProps<'section'> & SessionViewProps) => {
+export const SessionView = ({
+  appConfig,
+  onAnimationComplete,
+  ...props
+}: React.ComponentProps<'section'> & SessionViewProps) => {
   useConnectionTimeout(200_000);
 
   const [chatOpen, setChatOpen] = useState(false);
@@ -37,19 +38,14 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
   const messages = useChatMessages();
   const { phase } = useVoiceSessionState();
   const room = useRoomContext();
-  const { queuePosition } = useSession();
   const liveMetrics = useLiveMetrics();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
   const { config, updateConfig } = useAgentConfigContext();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -57,8 +53,8 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
     switch (phase) {
       case 'listening': return 'LISTENING';
       case 'reasoning': return 'REASONING';
-      case 'speaking': return 'SPEAKING';
-      default: return 'IDLE';
+      case 'speaking':  return 'SPEAKING';
+      default:          return 'IDLE';
     }
   };
 
@@ -66,8 +62,8 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
     switch (phase) {
       case 'listening': return 'text-emerald-400';
       case 'reasoning': return 'text-cyan-400';
-      case 'speaking': return 'text-blue-400';
-      default: return 'text-white/40';
+      case 'speaking':  return 'text-blue-400';
+      default:          return 'text-white/40';
     }
   };
 
@@ -77,27 +73,25 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
       className="relative flex h-dvh w-full flex-col overflow-hidden bg-transparent font-sans selection:bg-cyan-500/30"
       {...props}
     >
-      {/* Background Glows */}
+      {/* Phase-reactive background glow */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <motion.div
           animate={{
-            scale: phase === 'listening' ? 1.4 : phase === 'speaking' ? 1.6 : 1,
-            opacity: phase === 'listening' ? 0.3 : phase === 'speaking' ? 0.4 : 0.15,
-            x: phase === 'listening' ? '-50%' : '-50%',
-            y: phase === 'listening' ? '-50%' : '-50%',
+            scale:   phase === 'speaking' ? 1.6 : phase === 'listening' ? 1.4 : 1,
+            opacity: phase === 'speaking' ? 0.4 : phase === 'listening' ? 0.3 : 0.12,
           }}
           transition={{ duration: 1.5, ease: 'easeInOut' }}
-          className="absolute top-1/2 left-1/2 h-200 w-200 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/20 blur-[150px]"
+          className="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/20 blur-[150px]"
         />
-        <div className="absolute top-[-10%] right-[-10%] h-100 w-100 rounded-full bg-blue-600/10 blur-[100px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] h-100 w-100 rounded-full bg-indigo-600/10 blur-[100px]" />
+        <div className="absolute -top-[10%] -right-[10%] h-[400px] w-[400px] rounded-full bg-blue-600/10 blur-[100px]" />
+        <div className="absolute -bottom-[10%] -left-[10%] h-[400px] w-[400px] rounded-full bg-indigo-600/10 blur-[100px]" />
       </div>
 
-      {/* Top Navigation / State */}
+      {/* Top bar */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="absolute top-20 md:top-24 inset-x-0 z-50 flex items-center justify-between px-8 md:px-12"
+        className="absolute inset-x-0 top-20 z-50 flex items-center justify-between px-8 md:top-24 md:px-12"
       >
         <div className="flex items-center gap-6">
           <ConnectionIndicator state={room.state} />
@@ -112,22 +106,15 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
             />
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <QueuePositionIndicator queuePosition={queuePosition} />
-          <BudgetIndicator metrics={liveMetrics} />
-          <VoiceStatusPill phase={phase} />
-        </div>
+        <VoiceStatusPill phase={phase} />
       </motion.div>
 
-      {/* Main Content Area */}
-      <div className="relative z-10 flex flex-1 items-center justify-center pt-32 pb-32 overflow-hidden">
-        <div className="relative flex flex-col items-center w-full max-w-4xl px-4">
-          {/* Central AI Orb */}
+      {/* Main content */}
+      <div className="relative z-10 flex flex-1 items-center justify-center overflow-hidden pt-32 pb-32">
+        <div className="relative flex w-full max-w-4xl flex-col items-center px-4">
+          {/* Orb */}
           <motion.div
-            animate={{
-              scale: phase === 'listening' ? 1.05 : phase === 'speaking' ? 1.1 : 1,
-            }}
+            animate={{ scale: phase === 'speaking' ? 1.1 : phase === 'listening' ? 1.05 : 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             className="z-20 mb-8"
           >
@@ -138,7 +125,7 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
             />
           </motion.div>
 
-          {/* Transcript / Chat Overlay */}
+          {/* Transcript */}
           <AnimatePresence>
             {chatOpen && (
               <motion.div
@@ -146,10 +133,8 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="no-scrollbar w-full max-h-[30vh] md:max-h-[40vh] overflow-y-auto scroll-smooth px-4 pb-10"
-                style={{
-                  maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)',
-                }}
+                className="no-scrollbar w-full max-h-[30vh] overflow-y-auto scroll-smooth px-4 pb-10 md:max-h-[40vh]"
+                style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}
               >
                 <TranscriptView messages={messages} />
               </motion.div>
@@ -157,22 +142,15 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
           </AnimatePresence>
         </div>
 
-        {/* Right Side Metrics Panel */}
-        <div className="pointer-events-none absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-4">
-          <SpotlightCard className="pointer-events-auto p-4 bg-white/5 border-white/5 backdrop-blur-xl w-64 shadow-2xl">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">System Intelligence</span>
-                <LiveMetricsPanel metrics={liveMetrics} className="bg-transparent border-0 shadow-none rounded-none p-0" />
-              </div>
-              <div className="h-px bg-white/5" />
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">Network Health</span>
-                <LatencyDebugPanel metrics={liveMetrics} className="bg-transparent border-0 rounded-none p-0" />
-              </div>
-            </div>
+        {/* Right panel — latency only */}
+        <div className="pointer-events-none absolute right-4 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-4 lg:flex md:right-8">
+          <SpotlightCard className="pointer-events-auto w-56 bg-white/5 border-white/5 p-4 backdrop-blur-xl shadow-2xl">
+            <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase mb-3 block">
+              System
+            </span>
+            <LiveMetricsPanel metrics={liveMetrics} />
           </SpotlightCard>
-          
+
           <AnimatePresence>
             {phase === 'speaking' && (
               <motion.div
@@ -187,19 +165,19 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
         </div>
       </div>
 
-      {/* Bottom Control Bar */}
+      {/* Bottom control bar */}
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.5 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex w-full max-w-fit justify-center px-4"
+        className="absolute bottom-10 left-1/2 z-50 flex w-full max-w-fit -translate-x-1/2 justify-center px-4"
       >
-        <SpotlightCard className="bg-white/5 border-white/10 backdrop-blur-2xl rounded-2xl overflow-visible">
+        <SpotlightCard className="overflow-visible rounded-2xl border-white/10 bg-white/5 backdrop-blur-2xl">
           <VoiceControlBar isChatOpen={chatOpen} onChatOpenChange={setChatOpen} />
         </SpotlightCard>
       </motion.div>
 
-      {/* Agent Configuration Panel */}
+      {/* Agent config panel */}
       <AgentConfigPanel
         config={config}
         onConfigChange={updateConfig}

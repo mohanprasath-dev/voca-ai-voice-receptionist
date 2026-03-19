@@ -26,12 +26,6 @@ class Tone(str, Enum):
     URGENT = "urgent"
 
 
-class BudgetMode(str, Enum):
-    NORMAL = "normal"
-    NEAR_LIMIT = "near_limit"
-    HARD_LIMIT = "hard_limit"
-
-
 class LanguageSegment(TypedDict):
     text: str
     lang: str
@@ -73,15 +67,6 @@ class TurnOutput(TypedDict):
 
 
 @dataclass
-class UsageBudget:
-    stt_seconds_used: float = 0.0
-    tts_seconds_used: float = 0.0
-    char_used: int = 0
-    active_sessions: int = 0
-    mode: str = BudgetMode.NORMAL.value
-
-
-@dataclass
 class SessionState:
     session_id: str
     language: str = "en"
@@ -96,15 +81,9 @@ class SessionState:
     turn_count: int = 0
     restored_after_disconnect: bool = False
     phase: Literal[
-        "idle",
-        "listening",
-        "reasoning",
-        "speaking",
-        "awaiting_confirmation",
-        "escalated",
-        "ended",
+        "idle", "listening", "reasoning", "speaking",
+        "awaiting_confirmation", "escalated", "ended",
     ] = "idle"
-    # Multilingual support fields
     user_language: str = "en"
     last_detected_language: Optional[str] = None
     agent_config: Dict[str, Any] = field(default_factory=dict)

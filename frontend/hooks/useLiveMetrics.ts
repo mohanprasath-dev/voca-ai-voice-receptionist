@@ -16,45 +16,25 @@ export function useLiveMetrics(): LiveMetrics {
       return;
     }
 
-    function onDataReceived(
-      payload: Uint8Array,
-      _participant?: unknown,
-      _kind?: unknown,
-      topic?: string
-    ) {
-      if (topic !== 'voca.metrics') {
-        return;
-      }
+    function onData(payload: Uint8Array, _p?: unknown, _k?: unknown, topic?: string) {
+      if (topic !== 'voca.metrics') return;
       try {
-        const text = new TextDecoder().decode(payload);
-        const data = JSON.parse(text) as Record<string, unknown>;
-        setMetrics((current) => ({
+        const data = JSON.parse(new TextDecoder().decode(payload)) as Record<string, unknown>;
+        setMetrics((cur) => ({
           avgResponseLatencyMs:
             (data.avgResponseLatencyMs as number) ??
             (data.avg_response_latency as number) ??
-            current.avgResponseLatencyMs,
+            cur.avgResponseLatencyMs,
           intentSuccessRate:
             (data.intentSuccessRate as number) ??
             (data.intent_success_rate as number) ??
-            current.intentSuccessRate,
-          budgetUsagePercentage:
-            (data.budgetUsagePercentage as number) ??
-            (data.budget_usage_percentage as number) ??
-            current.budgetUsagePercentage,
-          budgetMode: ((data.budgetMode as string) ??
-            (data.budget_mode as string) ??
-            current.budgetMode ??
-            'normal') as 'normal' | 'near_limit' | 'hard_limit',
+            cur.intentSuccessRate,
         }));
-      } catch {
-        // Ignore invalid payloads.
-      }
+      } catch { /* ignore */ }
     }
 
-    room.on(RoomEvent.DataReceived, onDataReceived);
-    return () => {
-      room.off(RoomEvent.DataReceived, onDataReceived);
-    };
+    room.on(RoomEvent.DataReceived, onData);
+    return () => { room.off(RoomEvent.DataReceived, onData); };
   }, [room]);
 
   return metrics;

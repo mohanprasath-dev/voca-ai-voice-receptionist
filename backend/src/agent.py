@@ -3,7 +3,7 @@ import json
 import logging
 import time
 from contextlib import suppress
-from typing import Any, Optional
+from typing import Optional
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -22,11 +22,9 @@ from livekit.agents import (
     cli,
     metrics,
 )
-from livekit.agents.llm import ChatContext
 from livekit.plugins import deepgram, google, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
-from voca.app_config import DEFAULT_CONFIG
 from voca.config.multilingual_config import (
     SUPPORTED_LANGUAGES,
     get_language,
@@ -34,7 +32,6 @@ from voca.config.multilingual_config import (
     resolve_final_config,
 )
 from voca.prompts.system_prompt import get_dynamic_system_prompt
-from voca.services.budget_manager import BudgetManager
 from voca.services.multilingual_tts import multilingual_tts_service
 from voca.services.telemetry import Telemetry
 
@@ -57,99 +54,105 @@ def prewarm(proc: JobProcess):
 def _normalize_language(code: Optional[str]) -> Optional[str]:
     if not code:
         return None
-    cleaned = str(code).strip()
-    if not cleaned:
-        return None
-    primary = cleaned.split("-")[0].split("_")[0].lower()
+    primary = str(code).strip().split("-")[0].split("_")[0].lower()
     return primary or None
 
 
 def _script_counts(text: str) -> dict[str, int]:
-    counts: dict[str, int] = {"devanagari": 0, "tamil": 0, "arabic": 0, "latin": 0}
+    counts: dict[str, int] = {"devanagari": 0, "tamil": 0, "latin": 0}
     for ch in text:
         o = ord(ch)
         if 0x0900 <= o <= 0x097F:
             counts["devanagari"] += 1
         elif 0x0B80 <= o <= 0x0BFF:
             counts["tamil"] += 1
-        elif 0x0600 <= o <= 0x06FF:
-            counts["arabic"] += 1
         elif ("A" <= ch <= "Z") or ("a" <= ch <= "z"):
             counts["latin"] += 1
     return counts
 
 
-def _dominant_language_from_text(text: str) -> Optional[str]:
+def _dominant_script(text: str) -> Optional[str]:
+    """Detect language from Unicode script — most reliable for Hindi/Tamil."""
     counts = _script_counts(text)
-    lowered = text.lower()
-    if any(
-        token in lowered.split()
-        for token in ("namaste", "kal", "aaj", "baje", "kripya", "dhanyavad", "shukriya", "nahi", "haan")
-    ):
+    total = sum(counts.values())
+    if total == 0:
+        return None
+    # If >20% of characters are Devanagari, it's Hindi
+    if counts["devanagari"] / max(total, 1) > 0.20:
         return "hi"
-    if counts["tamil"] > 0 and counts["tamil"] >= max(counts["devanagari"], counts["arabic"]):
+    # If >20% of characters are Tamil script, it's Tamil
+    if counts["tamil"] / max(total, 1) > 0.20:
         return "ta"
-    if counts["devanagari"] > 0 and counts["devanagari"] >= max(counts["tamil"], counts["arabic"]):
+    # Hinglish heuristics
+    lowered = text.lower()
+    hinglish = (
+        "namaste", "kal", "aaj", "baje", "kripya", "dhanyavad",
+        "shukriya", "nahi", "haan", "theek", "accha", "kya", "hai",
+        "mujhe", "aapko", "bahut", "kuch", "kaisa",
+    )
+    if any(w in lowered.split() for w in hinglish):
         return "hi"
     return None
 
 
-def _resolve_detected_language(
-    transcript: str,
-    detected: Optional[str],
-    *,
-    last_detected_language: Optional[str],
-) -> str:
-    normalized = _normalize_language(detected) if detected else None
-    inferred = _dominant_language_from_text(transcript)
+def _resolve_language(transcript: str, detected: Optional[str], last: Optional[str]) -> str:
+    """
+    Resolve language with priority:
+    1. Script-based detection (most reliable for Hindi/Tamil)
+    2. Deepgram reported language
+    3. Last known language
+    4. English fallback
+    """
+    # Script detection is most reliable — check first
+    script_lang = _dominant_script(transcript)
+    if script_lang:
+        return script_lang
 
-    if not normalized:
-        return inferred or last_detected_language or "en"
+    # Use Deepgram's reported language
+    normalized = _normalize_language(detected)
+    if normalized and normalized in SUPPORTED_LANGUAGES:
+        return normalized
 
-    # If Deepgram says English but we see non-Latin script, trust the script
-    if normalized == "en" and inferred and inferred != "en":
-        return last_detected_language or inferred
+    # Keep last detected language
+    if last:
+        return last
 
-    return normalized
+    return "en"
 
 
 async def entrypoint(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
 
-    # Connect to LiveKit room
-    print("🔌 Connecting to room...")
+    print("🔌 Connecting...")
     await ctx.connect()
     print("✅ Connected")
 
-    # Wait for participant
     print("⏳ Waiting for participant...")
     participant = await ctx.wait_for_participant()
-    print(f"👤 Participant joined: {participant.identity}")
+    print(f"👤 Participant: {participant.identity}")
 
     # Load user config from participant metadata
     user_config = None
     if participant.metadata:
         try:
             user_config = json.loads(participant.metadata)
-            logger.info(f"User config loaded: {user_config}")
-        except Exception as e:
-            logger.warning(f"Could not parse metadata: {e}")
+        except Exception:
+            pass
 
-    # Resolve configuration
     final_config = resolve_final_config(user_config)
-    logger.info(
-        f"Final config — language: {get_language(final_config)}, voice: {get_voice(final_config)}"
-    )
+    print(f"🌐 Language: {get_language(final_config)} | Voice: {get_voice(final_config)}")
 
     # Create TTS
     murf_tts = multilingual_tts_service.create_tts_instance(final_config)
 
-    # Build AgentSession — Gemini LLM handles ALL responses
+    # Build AgentSession
+    # NOTE: detect_language=True tells Deepgram to report per-utterance language codes
+    # NOTE: language="multi" enables Deepgram multilingual streaming
     session = AgentSession(
         stt=deepgram.STT(
             model="nova-3",
             language="multi",
-            detect_language=False,
+            detect_language=True,   # CRITICAL: must be True to get language codes back
             interim_results=True,
             smart_format=True,
         ),
@@ -160,121 +163,74 @@ async def entrypoint(ctx: JobContext):
         preemptive_generation=True,
     )
 
-    # Telemetry + budget
-    budget_manager = BudgetManager(DEFAULT_CONFIG)
     telemetry = Telemetry()
     runtime_session_id = f"{ctx.room.name}-{uuid4().hex[:8]}"
-
-    # Session state
     current_config = final_config.copy()
     last_detected_language: Optional[str] = None
     last_turn_activity_ms = int(time.time() * 1000)
     background_tasks: set[asyncio.Task] = set()
 
-    def _track_task(task: asyncio.Task, *, name: str) -> None:
+    def _track(task: asyncio.Task, name: str) -> None:
         background_tasks.add(task)
-
-        def _on_done(t: asyncio.Task) -> None:
+        def _done(t: asyncio.Task) -> None:
             background_tasks.discard(t)
             with suppress(Exception):
-                exc = t.exception()
-                if exc:
-                    logger.warning(f"Background task '{name}' failed: {exc}")
+                if (exc := t.exception()):
+                    logger.warning(f"Task '{name}' failed: {exc}")
+        task.add_done_callback(_done)
 
-        task.add_done_callback(_on_done)
-
-    async def _publish_data(topic: str, payload: dict) -> None:
+    async def _pub(topic: str, payload: dict) -> None:
         try:
             lp = getattr(ctx.room, "local_participant", None)
             if lp:
-                await lp.publish_data(
-                    payload=json.dumps(payload), topic=topic, reliable=True
-                )
+                await lp.publish_data(json.dumps(payload), topic=topic, reliable=True)
         except Exception as e:
-            logger.debug(f"publish_data failed ({topic}): {e}")
+            logger.debug(f"pub failed: {e}")
 
-    def _publish_bg(topic: str, payload: dict) -> None:
-        t = asyncio.create_task(_publish_data(topic, payload))
-        _track_task(t, name=f"publish:{topic}")
+    def _pub_bg(topic: str, payload: dict) -> None:
+        _track(asyncio.create_task(_pub(topic, payload)), f"pub:{topic}")
 
-    def _publish_phase(phase: str, intent: Optional[str] = None) -> None:
-        _publish_bg(
-            "voca.session",
-            {
-                "session_id": runtime_session_id,
-                "phase": phase,
-                "intent": intent,
-                "timestamp_ms": int(time.time() * 1000),
-            },
-        )
+    def _phase(phase: str, intent: Optional[str] = None) -> None:
+        _pub_bg("voca.session", {
+            "session_id": runtime_session_id,
+            "phase": phase,
+            "intent": intent,
+            "timestamp_ms": int(time.time() * 1000),
+        })
 
-    def _publish_chat(role: str, message: str) -> None:
+    def _chat(role: str, message: str) -> None:
         if not message:
             return
-        _publish_bg(
-            "voca.chat",
-            {
-                "id": uuid4().hex,
-                "role": role,
-                "message": message,
-                "timestamp_ms": int(time.time() * 1000),
-            },
-        )
+        _pub_bg("voca.chat", {
+            "id": uuid4().hex,
+            "role": role,
+            "message": message,
+            "timestamp_ms": int(time.time() * 1000),
+        })
 
-    # ── Metrics ──────────────────────────────────────────────────────────────
+    # Metrics
     usage_collector = metrics.UsageCollector()
 
     @session.on("metrics_collected")
     def _on_metrics(ev: MetricsCollectedEvent):
         metrics.log_metrics(ev.metrics)
         usage_collector.collect(ev.metrics)
-        summary = usage_collector.get_summary()
+        _pub_bg("voca.metrics", telemetry.snapshot())
 
-        def _val(src: Any, keys: list[str]) -> float:
-            for k in keys:
-                v = (src.get(k) if isinstance(src, dict) else getattr(src, k, None))
-                if v is not None:
-                    try:
-                        return float(v)
-                    except (TypeError, ValueError):
-                        pass
-            return 0.0
-
-        budget_manager.record_stt_seconds(_val(summary, ["stt_audio_duration", "stt_seconds"]))
-        budget_manager.record_tts_seconds(_val(summary, ["tts_audio_duration", "tts_seconds"]))
-        budget_manager.record_characters(int(_val(summary, ["llm_characters", "llm_chars"])))
-
-        telemetry.set_budget_usage_percentage(
-            max(
-                budget_manager.usage().stt_seconds_used / DEFAULT_CONFIG.stt_max_seconds * 100,
-                budget_manager.usage().tts_seconds_used / DEFAULT_CONFIG.tts_max_seconds * 100,
-                budget_manager.usage().char_used / DEFAULT_CONFIG.api_char_budget * 100,
-            )
-        )
-        telemetry.set_budget_mode(budget_manager.current_mode())
-        _publish_bg("voca.metrics", telemetry.snapshot())
-
-    # ── Agent state → phase publishing ───────────────────────────────────────
+    # Phase publishing
     @session.on("agent_state_changed")
-    def _on_agent_state(ev: AgentStateChangedEvent):
-        phase_map = {
-            "listening": "listening",
-            "thinking": "reasoning",
-            "speaking": "speaking",
-        }
-        phase = phase_map.get(str(ev.new_state), "idle")
-        _publish_phase(phase)
+    def _on_state(ev: AgentStateChangedEvent):
+        phase_map = {"listening": "listening", "thinking": "reasoning", "speaking": "speaking"}
+        _phase(phase_map.get(str(ev.new_state), "idle"))
 
-    # ── Speech created → track handle ────────────────────────────────────────
+    # Speech handle tracking
     latest_speech_handle = None
+    is_agent_speaking = False
 
     @session.on("speech_created")
-    def _on_speech_created(ev: SpeechCreatedEvent):
+    def _on_speech(ev: SpeechCreatedEvent):
         nonlocal latest_speech_handle
         latest_speech_handle = ev.speech_handle
-
-    # ── User barge-in interrupt ───────────────────────────────────────────────
-    is_agent_speaking = False
 
     @session.on("agent_state_changed")
     def _track_speaking(ev: AgentStateChangedEvent):
@@ -284,105 +240,94 @@ async def entrypoint(ctx: JobContext):
     @session.on("user_state_changed")
     def _on_user_state(ev: UserStateChangedEvent):
         nonlocal is_agent_speaking
-        if ev.new_state == "speaking" and is_agent_speaking and latest_speech_handle is not None:
-            try:
+        if ev.new_state == "speaking" and is_agent_speaking and latest_speech_handle:
+            with suppress(Exception):
                 latest_speech_handle.interrupt(force=True)
-                is_agent_speaking = False
-                _publish_phase("listening", intent="interrupt")
-            except Exception as e:
-                logger.debug(f"Interrupt failed: {e}")
+            is_agent_speaking = False
+            _phase("listening", "interrupt")
 
-    # ── Transcript → language detection + phase publish ──────────────────────
+    # Transcript → language detection + config update
     @session.on("user_input_transcribed")
     def _on_transcript(ev: UserInputTranscribedEvent):
         nonlocal last_detected_language, last_turn_activity_ms, current_config
 
-        user_text = (ev.transcript or "").strip()
-        if not user_text:
+        text = (ev.transcript or "").strip()
+        if not text:
             return
 
         last_turn_activity_ms = int(time.time() * 1000)
-        is_final = bool(getattr(ev, "is_final", True))
 
-        if not is_final:
-            _publish_phase("listening", intent="partial")
+        # Only act on final transcripts
+        if not bool(getattr(ev, "is_final", True)):
+            _phase("listening", "partial")
             return
 
-        # Publish chat message from user
-        _publish_chat("user", user_text)
-        _publish_phase("reasoning", intent="transcript")
+        _chat("user", text)
+        _phase("reasoning", "transcript")
 
-        # Detect language
-        detected_raw = getattr(ev, "language", None)
-        resolved_lang = _resolve_detected_language(
-            user_text, detected_raw, last_detected_language=last_detected_language
-        )
-        last_detected_language = resolved_lang
+        # Resolve language
+        deepgram_lang = getattr(ev, "language", None)
+        resolved = _resolve_language(text, deepgram_lang, last_detected_language)
+        logger.info(f"Transcript: '{text}' | deepgram_lang={deepgram_lang} | resolved={resolved}")
 
-        logger.info(f"User: '{user_text}' | Language: {resolved_lang}")
+        if resolved != last_detected_language:
+            last_detected_language = resolved
+            logger.info(f"Language updated → {resolved}")
 
-        # Switch language/voice/prompt if changed
-        if resolved_lang != get_language(current_config) and resolved_lang in SUPPORTED_LANGUAGES:
-            logger.info(f"Language switch: {get_language(current_config)} → {resolved_lang}")
-            new_config = resolve_final_config(user_config, resolved_lang)
-            current_config = new_config
+        # Update agent config if language changed
+        if resolved != get_language(current_config) and resolved in SUPPORTED_LANGUAGES:
+            logger.info(f"🌐 Switching agent → language={resolved}")
+            current_config = resolve_final_config(user_config, resolved)
 
             # Update TTS voice
-            new_tts = multilingual_tts_service.update_tts_for_language(resolved_lang, current_config)
+            new_tts = multilingual_tts_service.update_tts_for_language(resolved, current_config)
             if new_tts:
-                # Update session TTS — apply to AgentSession directly
-                try:
-                    session._tts = new_tts  # type: ignore[attr-defined]
-                except Exception:
-                    pass
+                with suppress(Exception):
+                    # Update session TTS engine
+                    if hasattr(session, '_tts'):
+                        session._tts = new_tts  # type: ignore[attr-defined]
+                    elif hasattr(session, 'tts'):
+                        session.tts = new_tts  # type: ignore[attr-defined]
+                logger.info(f"🔊 TTS voice updated → {get_voice(current_config)}")
 
-            # Update LLM instructions
-            new_prompt = get_dynamic_system_prompt(current_config)
-            try:
-                session.update_instructions(new_prompt)
-            except Exception as e:
-                logger.warning(f"update_instructions failed: {e}")
+            # Update LLM system instructions
+            with suppress(Exception):
+                session.update_instructions(get_dynamic_system_prompt(current_config))
+                logger.info(f"📝 Instructions updated for {resolved}")
 
-    # ── Start the session ─────────────────────────────────────────────────────
-    print("🚀 Starting AgentSession...")
+    # Start agent
+    print("🚀 Starting agent...")
     await session.start(
         agent=Assistant(final_config),
         room=ctx.room,
-        room_input_options=RoomInputOptions(
-            noise_cancellation=noise_cancellation.BVC(),
-        ),
+        room_input_options=RoomInputOptions(noise_cancellation=noise_cancellation.BVC()),
     )
-    print("✅ AgentSession started — agent is live")
+    print("✅ Agent is live — listening for speech")
+    _phase("listening", "connected")
 
-    _publish_phase("listening", intent="connected")
+    # Keepalive
+    KEEPALIVE = {
+        "en": "Still there? I'm here whenever you're ready.",
+        "hi": "क्या आप अभी भी यहाँ हैं? मैं यहाँ हूँ।",
+        "ta": "நீங்கள் இன்னும் இங்கே இருக்கிறீர்களா? நான் இங்கே இருக்கிறேன்.",
+    }
 
-    # ── Keepalive loop ────────────────────────────────────────────────────────
-    async def _keepalive_loop():
-        KEEPALIVE = {
-            "en": "Still with me? I'm here whenever you're ready.",
-            "hi": "क्या आप अभी भी यहाँ हैं? मैं यहाँ हूँ।",
-            "ta": "நீங்கள் இன்னும் இங்கே இருக்கிறீர்களா? நான் இங்கே இருக்கிறேன்.",
-        }
+    async def _keepalive():
         while True:
             await asyncio.sleep(30)
-            now_ms = int(time.time() * 1000)
-            if now_ms - last_turn_activity_ms >= 60_000:
+            if int(time.time() * 1000) - last_turn_activity_ms >= 60_000:
                 lang = get_language(current_config)
                 msg = KEEPALIVE.get(lang, KEEPALIVE["en"])
-                logger.info(f"Sending keepalive ({lang})")
-                _publish_phase("speaking", intent="keepalive")
-                try:
+                _phase("speaking", "keepalive")
+                with suppress(Exception):
                     await session.say(msg, allow_interruptions=True)
-                except Exception as e:
-                    logger.debug(f"Keepalive TTS failed: {e}")
-                _publish_phase("listening", intent="keepalive")
+                _phase("listening", "keepalive")
 
-    ka_task = asyncio.create_task(_keepalive_loop())
-    _track_task(ka_task, name="keepalive")
+    ka = asyncio.create_task(_keepalive())
+    _track(ka, "keepalive")
 
-    # ── Shutdown ──────────────────────────────────────────────────────────────
     async def _shutdown():
-        ka_task.cancel()
+        ka.cancel()
         pending = [t for t in list(background_tasks) if not t.done()]
         for t in pending:
             t.cancel()

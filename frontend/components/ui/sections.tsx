@@ -3,42 +3,40 @@
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import * as Icons from '@phosphor-icons/react';
-import { Button } from './button';
 import { Container } from './container';
 import { GlassButton } from './glass-button';
 import { GlassCard } from './glass-card';
 
 const FEATURES = [
   {
-    title: 'Ultra-Low Latency',
-    description:
-      'Powered by Murf Falcon, experience response times that feel natural and human-like.',
-    icon: Icons.LightningIcon,
+    title: 'Murf Falcon TTS',
+    description: 'Sub-130ms voice synthesis via the Murf Falcon model — the fastest production-grade TTS available.',
+    icon: Icons.WaveformIcon,
   },
   {
-    title: 'Voice-First UX',
-    description: 'Replaces traditional interfaces with an intuitive conversational flow.',
-    icon: Icons.SpeakerHighIcon,
+    title: 'Voice-First Interface',
+    description: 'No buttons, no forms — just speak. The entire UI responds to your voice in real time.',
+    icon: Icons.MicrophoneIcon,
   },
   {
-    title: 'Multilingual Support',
-    description: 'Seamlessly switch between languages with native-level fluency and accent.',
-    icon: Icons.GlobeIcon,
+    title: 'EN · HI · TA',
+    description: 'Automatic language detection. Switch between English, Hindi, and Tamil mid-conversation.',
+    icon: Icons.TranslateIcon,
   },
   {
-    title: 'Intent Intelligence',
-    description: 'Advanced NLU to understand complex requests and provide accurate responses.',
+    title: 'Gemini 2.5 Flash LLM',
+    description: 'Google Gemini 2.5 Flash powers every response — fast, accurate, and context-aware.',
     icon: Icons.CpuIcon,
   },
   {
-    title: 'Real-time Analytics',
-    description: 'Monitor session health, budget, and performance metrics as they happen.',
-    icon: Icons.ChartPieSliceIcon,
+    title: 'LiveKit Real-time',
+    description: 'WebRTC-based audio transport with <50ms round-trip. Barge-in interruption supported.',
+    icon: Icons.BroadcastIcon,
   },
   {
-    title: 'Crystal Clear Audio',
-    description: 'High-fidelity voice synthesis that captures emotion and nuance.',
-    icon: Icons.MicrophoneIcon,
+    title: 'Deepgram Nova-3 STT',
+    description: 'State-of-the-art speech-to-text with multilingual streaming and interim results.',
+    icon: Icons.SpeakerHighIcon,
   },
 ];
 
@@ -46,49 +44,47 @@ export const Features = () => {
   return (
     <section id="features" className="relative z-10 py-24 md:py-32">
       <Container>
-        <div className="text-center">
+        <div className="text-center mb-16">
           <motion.h2
-            className="bg-linear-to-br from-white to-white/60 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent sm:text-5xl lg:text-6xl"
+            className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            Engineered for <br className="sm:hidden" /> Perfect Conversations.
+            The Full Stack Behind Voca
           </motion.h2>
           <motion.p
-            className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg font-medium"
+            className="mx-auto mt-5 max-w-2xl text-base text-white/50"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Voca combines state-of-the-art AI models with a focus on real-time performance and user
-            experience.
+            Every component is production-grade. No demos, no mocks — the voice pipeline you
+            experience is the same one running live.
           </motion.p>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature, index) => (
             <motion.div
               key={feature.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.5, delay: index * 0.08 }}
             >
               <GlassCard
                 intensity="medium"
-                glowColor="rgba(56,189,248,0.1)"
-                className="group h-full p-8 transition-all hover:-translate-y-2 hover:bg-white/10"
+                glowColor="rgba(34,211,238,0.08)"
+                className="group h-full p-7 transition-all hover:-translate-y-1 hover:bg-white/8"
               >
-                <div className="bg-primary/20 text-primary mb-6 inline-flex size-14 items-center justify-center rounded-2xl p-2.5 shadow-[0_0_30px_rgba(56,189,248,0.3)] transition-transform group-hover:scale-110">
-                  <feature.icon size={28} weight="duotone" />
+                <div className="mb-5 inline-flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-cyan-400 transition-transform group-hover:scale-110">
+                  <feature.icon size={22} weight="duotone" />
                 </div>
-                <h3 className="text-foreground text-xl font-bold">{feature.title}</h3>
-                <p className="text-muted-foreground mt-4 leading-relaxed font-medium">
-                  {feature.description}
-                </p>
+                <h3 className="text-base font-bold text-white">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-white/50">{feature.description}</p>
               </GlassCard>
             </motion.div>
           ))}
@@ -102,45 +98,38 @@ export const CTASection = () => {
   return (
     <section className="relative z-10 w-full py-24">
       <Container>
-        <GlassCard
-          intensity="high"
-          glowColor="rgba(56,189,248,0.2)"
-          className="relative overflow-hidden px-8 py-20 text-center md:px-16 md:py-28"
+        <div
+          className="relative overflow-hidden rounded-[2.5rem] border border-white/10 px-8 py-20 text-center md:px-16 md:py-28"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(24px)' }}
         >
-          <div className="relative z-10 mx-auto max-w-3xl text-center">
-            <h2 className="text-4xl font-extrabold tracking-tight text-white md:text-5xl lg:text-6xl">
-              Ready to{' '}
-              <span className="bg-linear-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                Revolutionize
-              </span>{' '}
-              Your CX?
+          <div className="relative z-10 mx-auto max-w-3xl">
+            <h2 className="text-4xl font-black tracking-tight text-white md:text-5xl">
+              Try Voca{' '}
+              <span style={{ background: 'linear-gradient(90deg,#22d3ee,#6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Right Now
+              </span>
             </h2>
-            <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed font-medium text-white/70">
-              Integrate Voca’s voice AI to deliver unparalleled customer experiences. Get started
-              with our demo or talk to our sales team today.
+            <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/55">
+              Click the button, allow microphone access, and start speaking.
+              The agent will greet you, understand your language, and respond in under 150ms.
             </p>
-            <div className="mt-12 flex flex-col items-center justify-center gap-6 sm:flex-row">
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/demo">
-                <GlassButton
-                  variant="primary"
-                  size="lg"
-                  className="w-full px-12 text-base sm:w-auto"
-                >
-                  Try the Demo
+                <GlassButton variant="primary" size="lg" className="w-full px-10 sm:w-auto">
+                  Start Live Demo
                 </GlassButton>
               </Link>
-              <Link href="/contact">
-                <GlassButton variant="ghost" size="lg" className="w-full px-12 text-base sm:w-auto">
-                  Contact Sales
+              <Link href="/about">
+                <GlassButton variant="ghost" size="lg" className="w-full px-10 sm:w-auto">
+                  Learn How It Works
                 </GlassButton>
               </Link>
             </div>
           </div>
-          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden mix-blend-screen">
-            <div className="bg-primary/40 absolute -top-[50%] -left-[20%] h-200 w-200 rounded-full blur-[150px]" />
-            <div className="absolute -right-[20%] -bottom-[50%] h-200 w-200 rounded-full bg-blue-500/30 blur-[150px]" />
-          </div>
-        </GlassCard>
+          {/* Glow accents */}
+          <div className="pointer-events-none absolute -top-32 -left-32 h-64 w-64 rounded-full bg-cyan-500/20 blur-[80px]" />
+          <div className="pointer-events-none absolute -bottom-32 -right-32 h-64 w-64 rounded-full bg-indigo-500/20 blur-[80px]" />
+        </div>
       </Container>
     </section>
   );

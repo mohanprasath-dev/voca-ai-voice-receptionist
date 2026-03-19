@@ -8,7 +8,7 @@ import { Footer } from '@/components/ui/footer';
 
 export default function LandingPage() {
   return (
-    <div className="bg-transparent text-white selection:bg-cyan-500/30 relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen text-white selection:bg-cyan-500/30">
       <Navbar />
       <main>
         <Hero />

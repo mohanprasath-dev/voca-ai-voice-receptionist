@@ -2,109 +2,136 @@
 
 import { motion } from 'motion/react';
 import * as Icons from '@phosphor-icons/react';
-import { PixelCard } from '@/components/reactbits/PixelCard';
 import { SpotlightCard } from '@/components/reactbits/SpotlightCard';
 import { BlurText } from '@/components/reactbits/BlurText';
 
-const STATS = [
-  { label: 'Total Conversations', value: '1,284', change: '+12%', icon: Icons.UsersIcon, color: 'text-blue-400' },
-  { label: 'Avg. Latency', value: '342ms', change: '-40ms', icon: Icons.ClockIcon, color: 'text-emerald-400' },
-  { label: 'System Uptime', value: '99.9%', change: 'Stable', icon: Icons.ActivityIcon, color: 'text-purple-400' },
-  { label: 'Token Burn', value: '$42.10', change: '+5%', icon: Icons.CurrencyDollarIcon, color: 'text-amber-400' },
+const STACK = [
+  { label: 'TTS Engine',   value: 'Murf Falcon',      note: 'falcon2 · < 130ms',         icon: Icons.WaveformIcon,       color: 'text-cyan-400' },
+  { label: 'STT Engine',   value: 'Deepgram',          note: 'nova-3 · multilingual',     icon: Icons.MicrophoneIcon,     color: 'text-emerald-400' },
+  { label: 'LLM',          value: 'Gemini 2.5 Flash',  note: 'Google AI · real-time',     icon: Icons.CpuIcon,            color: 'text-purple-400' },
+  { label: 'Transport',    value: 'LiveKit',            note: 'WebRTC · barge-in',         icon: Icons.BroadcastIcon,      color: 'text-blue-400' },
+];
+
+const SERVICES = [
+  { label: 'Murf Falcon TTS',        status: 'Live',        dot: 'bg-emerald-400' },
+  { label: 'Deepgram Nova-3 STT',    status: 'Live',        dot: 'bg-emerald-400' },
+  { label: 'Gemini 2.5 Flash LLM',   status: 'Live',        dot: 'bg-emerald-400' },
+  { label: 'LiveKit WebRTC',         status: 'Live',        dot: 'bg-emerald-400' },
+  { label: 'Language Detection',     status: 'Active',      dot: 'bg-cyan-400' },
+  { label: 'Voice Activity Detection', status: 'Silero VAD', dot: 'bg-blue-400' },
+];
+
+const LANGUAGES = [
+  { code: 'en', name: 'English',  voice: 'en-US-natalie', flag: '🇺🇸' },
+  { code: 'hi', name: 'Hindi',    voice: 'hi-IN-aditi',   flag: '🇮🇳' },
+  { code: 'ta', name: 'Tamil',    voice: 'ta-IN-kavitha', flag: '🇮🇳' },
+  { code: 'es', name: 'Spanish',  voice: 'es-ES-laura',   flag: '🇪🇸' },
+  { code: 'fr', name: 'French',   voice: 'fr-FR-natalie', flag: '🇫🇷' },
+  { code: 'de', name: 'German',   voice: 'de-DE-clara',   flag: '🇩🇪' },
+  { code: 'ja', name: 'Japanese', voice: 'ja-JP-nanami',  flag: '🇯🇵' },
+  { code: 'ko', name: 'Korean',   voice: 'ko-KR-jihun',   flag: '🇰🇷' },
+  { code: 'zh', name: 'Chinese',  voice: 'zh-CN-xiaoxiao',flag: '🇨🇳' },
 ];
 
 export default function DashboardPage() {
   return (
-    <div className="bg-transparent min-h-screen text-white selection:bg-cyan-500/30">
-      <main className="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-transparent text-white selection:bg-cyan-500/30">
+      <main className="mx-auto max-w-7xl px-6 pb-20 pt-32 md:px-10">
+
+        {/* Header */}
         <header className="mb-12">
-          <BlurText 
-            text="System Analytics" 
-            className="text-4xl font-black tracking-tight"
-          />
-          <p className="mt-2 text-white/40 font-medium">Real-time performance metrics for your Voca agents.</p>
+          <BlurText text="System Overview" className="text-4xl font-black tracking-tight text-white" />
+          <p className="mt-2 text-sm text-white/40">
+            Live architecture view of the Voca AI voice pipeline
+          </p>
         </header>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {STATS.map((stat, i) => (
-            <SpotlightCard key={stat.label} className="p-6 bg-white/5 border-white/5 group transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-2xl bg-white/5 ${stat.color}`}>
-                  <stat.icon size={24} weight="duotone" />
-                </div>
-                <span className={`text-xs font-bold px-2 py-1 rounded-md bg-white/5 ${stat.change.startsWith('+') ? 'text-emerald-400' : 'text-blue-400'}`}>
-                  {stat.change}
-                </span>
+        {/* Stack cards */}
+        <div className="mb-10 grid grid-cols-2 gap-5 lg:grid-cols-4">
+          {STACK.map((item) => (
+            <SpotlightCard
+              key={item.label}
+              className="border-white/8 bg-black/30 p-6 backdrop-blur-md"
+            >
+              <div className={`mb-4 inline-flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 ${item.color}`}>
+                <item.icon size={20} weight="duotone" />
               </div>
-              <h3 className="text-white/40 text-xs font-bold tracking-widest uppercase mb-1">{stat.label}</h3>
-              <div className="text-2xl font-black tracking-tight">{stat.value}</div>
+              <div className="text-[10px] font-bold tracking-widest text-white/35 uppercase mb-1">{item.label}</div>
+              <div className="text-base font-black text-white">{item.value}</div>
+              <div className="mt-1 text-[10px] text-white/35">{item.note}</div>
             </SpotlightCard>
           ))}
         </div>
 
-        {/* Main Content Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Active Agents */}
-          <PixelCard variant="cyan" className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h3 className="text-xl font-bold mb-1">Active Voice Agents</h3>
-                <p className="text-white/40 text-sm font-medium">Currently processing live streams</p>
-              </div>
-              <button className="text-xs font-bold tracking-widest uppercase text-cyan-400 flex items-center gap-2 hover:opacity-80 transition-opacity">
-                Manage All <Icons.ArrowUpRightIcon size={14} />
-              </button>
-            </div>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
 
-            <div className="space-y-4">
-              {[
-                { name: 'Customer Support', lang: 'English (US)', status: 'Active', load: '12% ' },
-                { name: 'Technical Sales', lang: 'Spanish (ES)', status: 'Active', load: '45%' },
-                { name: 'Multilingual Reception', lang: 'Mixed', status: 'Standby', load: '0%' }
-              ].map((agent, i) => (
-                <div key={agent.name} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="size-10 rounded-full bg-linear-to-br from-cyan-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center">
-                      <Icons.UsersIcon size={18} className="text-cyan-400" weight="duotone" />
-                    </div>
-                    <div>
-                      <div className="font-bold text-sm">{agent.name}</div>
-                      <div className="text-xs text-white/40">{agent.lang}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold uppercase tracking-widest mb-1">{agent.status}</div>
-                    <div className="text-[10px] text-white/40">{agent.load} load</div>
+          {/* Services health */}
+          <SpotlightCard className="lg:col-span-1 border-white/8 bg-black/30 p-7 backdrop-blur-md">
+            <h3 className="mb-6 text-base font-black text-white">Pipeline Health</h3>
+            <div className="space-y-5">
+              {SERVICES.map((s) => (
+                <div key={s.label} className="flex items-center justify-between">
+                  <span className="text-sm text-white/60">{s.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-white/35">{s.status}</span>
+                    <div className={`size-2 rounded-full ${s.dot} animate-pulse`} />
                   </div>
                 </div>
               ))}
             </div>
-          </PixelCard>
+          </SpotlightCard>
 
-          {/* System Health */}
-          <div className="space-y-8">
-            <SpotlightCard className="p-8 bg-linear-to-br from-cyan-500/10 to-transparent border-cyan-500/20 h-full">
-              <h3 className="text-lg font-black mb-6">Service Health</h3>
-              <div className="space-y-6">
-                {[
-                  { label: 'STT (Deepgram)', status: 'Operational', color: 'bg-emerald-500' },
-                  { label: 'LLM (OpenAI)', status: 'Operational', color: 'bg-emerald-500' },
-                  { label: 'TTS (Murf)', status: 'Operational', color: 'bg-emerald-500' },
-                  { label: 'Real-time Transport', status: 'Operational', color: 'bg-emerald-500' }
-                ].map((item, i) => (
-                  <div key={item.label} className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white/60">{item.label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white/40">{item.status}</span>
-                      <div className={`size-2 rounded-full ${item.color} animate-pulse`} />
-                    </div>
+          {/* Language support */}
+          <SpotlightCard className="lg:col-span-2 border-white/8 bg-black/30 p-7 backdrop-blur-md">
+            <h3 className="mb-6 text-base font-black text-white">Supported Languages &amp; Voices</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {LANGUAGES.map((lang) => (
+                <div
+                  key={lang.code}
+                  className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3"
+                >
+                  <span className="text-lg">{lang.flag}</span>
+                  <div>
+                    <div className="text-xs font-bold text-white">{lang.name}</div>
+                    <div className="text-[10px] text-white/35">{lang.voice}</div>
                   </div>
-                ))}
-              </div>
-            </SpotlightCard>
-          </div>
+                </div>
+              ))}
+            </div>
+          </SpotlightCard>
         </div>
+
+        {/* How it works */}
+        <div className="mt-10">
+          <SpotlightCard className="border-white/8 bg-black/30 p-8 backdrop-blur-md">
+            <h3 className="mb-8 text-base font-black text-white">Voice Pipeline Flow</h3>
+            <div className="flex flex-col items-start gap-0 sm:flex-row sm:items-center sm:gap-0 overflow-x-auto pb-2">
+              {[
+                { step: '1', label: 'User speaks',         icon: Icons.MicrophoneIcon,    color: 'text-white' },
+                { step: '2', label: 'Deepgram STT',        icon: Icons.WaveformIcon,      color: 'text-emerald-400' },
+                { step: '3', label: 'Language detect',     icon: Icons.TranslateIcon,     color: 'text-cyan-400' },
+                { step: '4', label: 'Gemini 2.5 Flash',    icon: Icons.CpuIcon,           color: 'text-purple-400' },
+                { step: '5', label: 'Murf Falcon TTS',     icon: Icons.SpeakerHighIcon,   color: 'text-blue-400' },
+                { step: '6', label: 'Agent speaks',        icon: Icons.ChatCenteredIcon,  color: 'text-white' },
+              ].map((step, i) => (
+                <div key={step.step} className="flex items-center">
+                  <div className="flex flex-col items-center gap-2 px-4 py-2">
+                    <div className={`flex size-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 ${step.color}`}>
+                      <step.icon size={18} weight="duotone" />
+                    </div>
+                    <span className="text-[10px] text-center font-bold text-white/50 w-20">{step.label}</span>
+                  </div>
+                  {i < 5 && (
+                    <div className="hidden text-white/20 sm:block">
+                      <Icons.ArrowRightIcon size={16} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </SpotlightCard>
+        </div>
+
       </main>
     </div>
   );

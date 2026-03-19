@@ -6,8 +6,6 @@ class Telemetry:
         self._response_latencies_ms: deque[int] = deque(maxlen=200)
         self._intent_successes = 0
         self._intent_total = 0
-        self._budget_usage_percentage = 0.0
-        self._budget_mode: str = "normal"
 
     def record_response_latency(self, latency_ms: int) -> None:
         self._response_latencies_ms.append(max(0, latency_ms))
@@ -17,13 +15,14 @@ class Telemetry:
         if success:
             self._intent_successes += 1
 
+    # Stubs kept for import compatibility
     def set_budget_usage_percentage(self, usage_pct: float) -> None:
-        self._budget_usage_percentage = max(0.0, min(100.0, usage_pct))
+        pass
 
     def set_budget_mode(self, mode: str) -> None:
-        self._budget_mode = mode
+        pass
 
-    def snapshot(self) -> dict[str, float | str]:
+    def snapshot(self) -> dict:
         avg_latency = 0.0
         if self._response_latencies_ms:
             avg_latency = sum(self._response_latencies_ms) / len(self._response_latencies_ms)
@@ -31,8 +30,6 @@ class Telemetry:
         if self._intent_total > 0:
             intent_success_rate = self._intent_successes / self._intent_total
         return {
-            "avg_response_latency": avg_latency,
-            "intent_success_rate": intent_success_rate,
-            "budget_usage_percentage": self._budget_usage_percentage,
-            "budget_mode": self._budget_mode,
+            "avgResponseLatencyMs": avg_latency,
+            "intentSuccessRate": intent_success_rate,
         }

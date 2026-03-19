@@ -6,101 +6,84 @@ import { Container } from './container';
 
 export const Footer = () => {
   return (
-    <footer className="bg-background border-t border-white/5 py-20">
+    <footer className="border-t border-white/8 py-16" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)' }}>
       <Container>
         <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
+
+          {/* Brand */}
           <div className="col-span-1 md:col-span-4">
-            <Link href="/" className="group flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-cyan-500 to-blue-600 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
-                <span className="text-[12px] font-black text-white">V</span>
-              </div>
-              <span className="text-[14px] font-black tracking-[0.2em] text-white">VOCA</span>
+            <Link href="/" className="inline-block">
+              <span className="text-[15px] font-black tracking-[0.3em] text-white">VOCA</span>
             </Link>
-            <p className="text-muted-foreground mt-6 max-w-sm leading-relaxed">
-              Voca is a next-generation voice AI platform designed for real-time human-AI
-              interaction. Built with cutting-edge technology to deliver the most natural
-              conversational experience.
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-white/45">
+              Real-time AI voice agent platform. Speak naturally in English, Hindi, or Tamil —
+              Voca understands, responds, and adapts instantly.
             </p>
           </div>
 
+          {/* Links */}
           <div className="col-span-1 md:col-span-2 md:col-start-7">
-            <h4 className="text-sm font-bold tracking-wider uppercase">Product</h4>
-            <ul className="text-muted-foreground mt-6 space-y-4 text-sm">
-              <li>
-                <Link href="/" className="hover:text-foreground transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link href="/demo" className="hover:text-foreground transition-colors">
-                  Demo
-                </Link>
-              </li>
-              <li>
-                <Link href="/#features" className="hover:text-foreground transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-foreground transition-colors">
-                  About
-                </Link>
-              </li>
+            <h4 className="text-[10px] font-black tracking-[0.2em] text-white/40 uppercase mb-5">Product</h4>
+            <ul className="space-y-3 text-sm">
+              {[
+                { label: 'Home', href: '/' },
+                { label: 'Live Demo', href: '/demo' },
+                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'About', href: '/about' },
+              ].map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-white/45 hover:text-white transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
+          {/* Developer */}
           <div className="col-span-1 md:col-span-3">
-            <h4 className="text-sm font-bold tracking-wider uppercase">Developer</h4>
-            <div className="mt-6">
-              <p className="text-foreground text-sm font-medium">Mohan Prasath P</p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                AI Engineer & Builder
-              </p>
-              <div className="mt-4 flex gap-4">
-                <a
-                  href="https://github.com/mohanprasath-dev"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="GitHub"
-                >
-                  <Icons.GithubLogoIcon size={20} weight="fill" />
-                </a>
-                <a
-                  href="https://linkedin.com/in/mohanprasath21"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="LinkedIn"
-                >
-                  <Icons.LinkedinLogoIcon size={20} weight="fill" />
-                </a>
-                <a
-                  href="https://www.mohanprasath.dev"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Portfolio"
-                >
-                  <Icons.GlobeIcon size={20} weight="fill" />
-                </a>
-              </div>
+            <h4 className="text-[10px] font-black tracking-[0.2em] text-white/40 uppercase mb-5">Builder</h4>
+            <p className="text-sm font-semibold text-white">Mohan Prasath P</p>
+            <p className="mt-1 text-xs text-white/40">AI Engineer &amp; Builder</p>
+            <div className="mt-4 flex items-center gap-4">
+              <a
+                href="https://github.com/mohanprasath-dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/35 hover:text-white transition-colors"
+                aria-label="GitHub"
+              >
+                <Icons.GithubLogoIcon size={18} weight="fill" />
+              </a>
+              <a
+                href="https://linkedin.com/in/mohanprasath21"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/35 hover:text-white transition-colors"
+                aria-label="LinkedIn"
+              >
+                <Icons.LinkedinLogoIcon size={18} weight="fill" />
+              </a>
+              <a
+                href="https://www.mohanprasath.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/35 hover:text-white transition-colors"
+                aria-label="Portfolio"
+              >
+                <Icons.GlobeIcon size={18} weight="fill" />
+              </a>
             </div>
           </div>
         </div>
 
-        <div className="mt-20 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 text-center md:flex-row md:text-left">
-          <p className="text-muted-foreground text-xs">
-            © {new Date().getFullYear()} Voca AI. All rights reserved.
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/6 pt-8 md:flex-row">
+          <p className="text-xs text-white/30">
+            © {new Date().getFullYear()} Voca AI · Built with LiveKit, Murf Falcon, Deepgram &amp; Gemini
           </p>
-          <div className="text-muted-foreground flex gap-8 text-xs">
-            <Link href="#" className="hover:text-foreground transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="#" className="hover:text-foreground transition-colors">
-              Terms of Service
-            </Link>
-          </div>
+          <p className="text-xs text-white/25">
+            mohanprasath-dev · mohanprasath21 · mohanprasath.dev
+          </p>
         </div>
       </Container>
     </footer>

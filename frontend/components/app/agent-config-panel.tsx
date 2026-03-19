@@ -21,60 +21,53 @@ interface AgentConfigPanelProps {
   onToggle: () => void;
 }
 
+const LANG_NAMES: Record<string, string> = {
+  en: 'English', hi: 'Hindi — हिंदी', ta: 'Tamil — தமிழ்',
+  es: 'Spanish', fr: 'French', de: 'German', it: 'Italian',
+  pt: 'Portuguese', ru: 'Russian', ja: 'Japanese', ko: 'Korean',
+  zh: 'Chinese', ar: 'Arabic',
+};
+
 export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
-  config,
-  onConfigChange,
-  isOpen,
-  onToggle
+  config, onConfigChange, isOpen, onToggle,
 }) => {
   const [activeTab, setActiveTab] = useState<'voice' | 'role' | 'company'>('voice');
 
-  const updateConfig = (updates: Partial<AgentConfig>) => {
+  const updateConfig = (updates: Partial<AgentConfig>) =>
     onConfigChange({ ...config, ...updates });
-  };
 
-  const updateCompanyConfig = (updates: Partial<AgentConfig['company']>) => {
+  const updateCompanyConfig = (updates: Partial<AgentConfig['company']>) =>
     onConfigChange({
       ...config,
-      company: { ...DEFAULT_AGENT_CONFIG.company, ...config.company, ...updates }
+      company: { ...DEFAULT_AGENT_CONFIG.company, ...config.company, ...updates },
     });
+
+  const addService = () =>
+    updateCompanyConfig({ services: [...(config.company?.services || []), ''] });
+
+  const updateService = (i: number, val: string) => {
+    const s = [...(config.company?.services || [])];
+    s[i] = val;
+    updateCompanyConfig({ services: s });
   };
 
-  const addService = () => {
-    const currentServices = config.company?.services || [];
+  const removeService = (i: number) =>
     updateCompanyConfig({
-      services: [...currentServices, '']
+      services: (config.company?.services || []).filter((_, idx) => idx !== i),
     });
-  };
-
-  const updateService = (index: number, value: string) => {
-    const currentServices = config.company?.services || [];
-    const updatedServices = [...currentServices];
-    updatedServices[index] = value;
-    updateCompanyConfig({ services: updatedServices });
-  };
-
-  const removeService = (index: number) => {
-    const currentServices = config.company?.services || [];
-    updateCompanyConfig({
-      services: currentServices.filter((_, i) => i !== index)
-    });
-  };
 
   return (
     <>
-      {/* Toggle Button */}
-      <Button
+      {/* Toggle button — bottom-left, above control bar */}
+      <button
         onClick={onToggle}
-        variant="outline"
-        size="sm"
-        className="fixed bottom-10 left-8 z-40 bg-white/5 backdrop-blur-xl border-white/10 text-white/70 hover:text-white hover:bg-white/10 rounded-xl px-4 h-12 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
+        style={{ zIndex: 40 }}
+        className="fixed bottom-28 left-6 flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-4 py-2.5 text-[11px] font-bold tracking-widest text-white/60 uppercase backdrop-blur-xl hover:text-white hover:bg-black/80 transition-all duration-200 shadow-lg"
       >
-        <Settings className="w-4 h-4 mr-2" />
-        Configure Agent
-      </Button>
+        <Settings size={14} />
+        Configure
+      </button>
 
-      {/* Configuration Panel */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -84,150 +77,146 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onToggle}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-60"
+              style={{ zIndex: 60 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
             />
-            
+
+            {/* Panel */}
             <motion.div
-              initial={{ opacity: 0, x: 400 }}
+              initial={{ opacity: 0, x: 420 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 400 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 h-full w-full max-w-md bg-[#080808] border-l border-white/5 z-70 shadow-2xl flex flex-col"
+              exit={{ opacity: 0, x: 420 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              style={{ zIndex: 70, background: '#09090b' }}
+              className="fixed right-0 top-0 flex h-full w-full max-w-md flex-col border-l border-white/8 shadow-2xl"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-8 border-b border-white/5">
+              <div className="flex items-center justify-between border-b border-white/6 px-7 py-6">
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight text-white">Agent Persona</h2>
-                  <p className="text-xs text-white/40 font-medium mt-1 uppercase tracking-widest">Customize your voice experience</p>
+                  <h2 className="text-xl font-black tracking-tight text-white">Agent Config</h2>
+                  <p className="mt-0.5 text-[10px] font-medium uppercase tracking-widest text-white/35">
+                    Customize voice · role · company
+                  </p>
                 </div>
-                <Button
+                <button
                   onClick={onToggle}
-                  variant="ghost"
-                  size="sm"
-                  className="size-10 rounded-full text-white/40 hover:text-white hover:bg-white/5"
+                  className="flex size-9 items-center justify-center rounded-full border border-white/8 text-white/40 hover:bg-white/5 hover:text-white transition-colors"
                 >
-                  <X className="w-5 h-5" />
-                </Button>
+                  <X size={16} />
+                </button>
               </div>
 
               {/* Tabs */}
-              <div className="flex p-2 bg-white/5 mx-8 mt-8 rounded-2xl gap-1">
-                {[
+              <div className="mx-7 mt-6 flex gap-1 rounded-xl border border-white/6 bg-white/3 p-1">
+                {([
                   { id: 'voice', label: 'Voice', icon: Globe },
                   { id: 'role', label: 'Role', icon: User },
-                  { id: 'company', label: 'Company', icon: Building }
-                ].map(({ id, label, icon: Icon }) => (
+                  { id: 'company', label: 'Company', icon: Building },
+                ] as const).map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    onClick={() => setActiveTab(id as 'voice' | 'role' | 'company')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-300 ${
+                    onClick={() => setActiveTab(id)}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-black tracking-widest uppercase transition-all duration-200 ${
                       activeTab === id
-                        ? 'text-white bg-white/10 shadow-lg'
+                        ? 'bg-white/10 text-white shadow'
                         : 'text-white/30 hover:text-white/60'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5" />
+                    <Icon size={12} />
                     {label}
                   </button>
                 ))}
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
+              <div className="no-scrollbar flex-1 overflow-y-auto px-7 py-6 space-y-6">
+
+                {/* ── VOICE TAB ── */}
                 {activeTab === 'voice' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Native Language</label>
-                        <select
-                          value={config.language || DEFAULT_AGENT_CONFIG.language}
-                          onChange={(e) => updateConfig({ language: e.target.value })}
-                          className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white appearance-none focus:outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
-                        >
-                          {SUPPORTED_LANGUAGES.map((lang) => (
-                            <option key={lang} value={lang} className="bg-[#080808]">
-                              {lang.toUpperCase()} - {new Intl.DisplayNames([lang], { type: 'language' }).of(lang)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Voice Profile</label>
-                        <select
-                          value={config.voice_id || DEFAULT_AGENT_CONFIG.voice_id}
-                          onChange={(e) => updateConfig({ voice_id: e.target.value as VoiceId })}
-                          className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white appearance-none focus:outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
-                        >
-                          {AVAILABLE_VOICES.map((voice) => (
-                            <option key={voice} value={voice} className="bg-[#080808]">
-                              {voice.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Conversational Tone</label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {['friendly', 'calm', 'urgent'].map((t) => (
-                            <button
-                              key={t}
-                              onClick={() => updateConfig({ tone: t as AgentTone })}
-                              className={`h-10 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all duration-300 ${
-                                (config.tone || DEFAULT_AGENT_CONFIG.tone) === t
-                                  ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
-                                  : 'bg-white/5 border-white/5 text-white/30 hover:text-white/60'
-                              }`}
-                            >
-                              {t}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                        Language
+                      </label>
+                      <select
+                        value={config.language || DEFAULT_AGENT_CONFIG.language}
+                        onChange={(e) => updateConfig({ language: e.target.value })}
+                        style={{
+                          width: '100%',
+                          height: '3rem',
+                          padding: '0 2.5rem 0 1rem',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '0.75rem',
+                          color: '#f8fafc',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          cursor: 'pointer',
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 0.75rem center',
+                        }}
+                      >
+                        {SUPPORTED_LANGUAGES.map((lang) => (
+                          <option key={lang} value={lang} style={{ background: '#09090b', color: '#f8fafc' }}>
+                            {LANG_NAMES[lang] || lang.toUpperCase()}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </motion.div>
-                )}
 
-                {activeTab === 'role' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">System Instructions</label>
-                      <div className="grid grid-cols-1 gap-3">
-                        {['receptionist', 'sales', 'support', 'assistant'].map((r) => (
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                        Voice Profile
+                      </label>
+                      <select
+                        value={config.voice_id || DEFAULT_AGENT_CONFIG.voice_id}
+                        onChange={(e) => updateConfig({ voice_id: e.target.value as VoiceId })}
+                        style={{
+                          width: '100%',
+                          height: '3rem',
+                          padding: '0 2.5rem 0 1rem',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '0.75rem',
+                          color: '#f8fafc',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          cursor: 'pointer',
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 0.75rem center',
+                        }}
+                      >
+                        {AVAILABLE_VOICES.map((voice) => (
+                          <option key={voice} value={voice} style={{ background: '#09090b', color: '#f8fafc' }}>
+                            {voice.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                        Tone
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['friendly', 'calm', 'urgent'] as AgentTone[]).map((t) => (
                           <button
-                            key={r}
-                            onClick={() => updateConfig({ role: r as AgentRole })}
-                            className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 text-left ${
-                              (config.role || DEFAULT_AGENT_CONFIG.role) === r
-                                ? 'bg-cyan-500/10 border-cyan-500/50'
-                                : 'bg-white/5 border-white/5 hover:border-white/10'
+                            key={t}
+                            onClick={() => updateConfig({ tone: t })}
+                            className={`h-10 rounded-xl border text-[10px] font-black tracking-widest uppercase transition-all duration-200 ${
+                              (config.tone || DEFAULT_AGENT_CONFIG.tone) === t
+                                ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400'
+                                : 'border-white/8 bg-white/4 text-white/35 hover:text-white/70'
                             }`}
                           >
-                            <div>
-                              <div className={`text-xs font-black tracking-widest uppercase mb-1 ${
-                                (config.role || DEFAULT_AGENT_CONFIG.role) === r ? 'text-cyan-400' : 'text-white/70'
-                              }`}>
-                                {r}
-                              </div>
-                              <div className="text-[10px] text-white/40 font-medium">
-                                {r === 'receptionist' && 'Appointment scheduling & office info'}
-                                {r === 'sales' && 'Product knowledge & lead capture'}
-                                {r === 'support' && 'Technical help & troubleshooting'}
-                                {r === 'assistant' && 'General productivity & information'}
-                              </div>
-                            </div>
-                            <ChevronRight size={16} className={
-                              (config.role || DEFAULT_AGENT_CONFIG.role) === r ? 'text-cyan-400' : 'text-white/20'
-                            } />
+                            {t}
                           </button>
                         ))}
                       </div>
@@ -235,78 +224,143 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                   </motion.div>
                 )}
 
-                {activeTab === 'company' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Organization Identity</label>
-                        <input
-                          type="text"
-                          value={config.company?.name || DEFAULT_AGENT_CONFIG.company.name}
-                          onChange={(e) => updateCompanyConfig({ name: e.target.value })}
-                          className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                          placeholder="Company name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Core Mission</label>
-                        <textarea
-                          value={config.company?.description || DEFAULT_AGENT_CONFIG.company.description}
-                          onChange={(e) => updateCompanyConfig({ description: e.target.value })}
-                          className="w-full p-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:outline-none focus:border-cyan-500/50 transition-colors resize-none h-24"
-                          placeholder="Describe your organization..."
-                        />
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Key Services</label>
-                        <div className="space-y-2">
-                          {(config.company?.services || DEFAULT_AGENT_CONFIG.company.services).map((service, index) => (
-                            <div key={index} className="flex gap-2">
-                              <input
-                                type="text"
-                                value={service}
-                                onChange={(e) => updateService(index, e.target.value)}
-                                className="flex-1 h-10 px-4 bg-white/5 border border-white/5 rounded-xl text-xs font-medium text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                                placeholder="e.g. 24/7 technical support"
-                              />
-                              <Button
-                                onClick={() => removeService(index)}
-                                variant="ghost"
-                                size="sm"
-                                className="size-10 rounded-xl text-white/20 hover:text-red-400 hover:bg-red-400/10"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            onClick={addService}
-                            variant="outline"
-                            className="w-full h-10 border-white/5 bg-white/5 text-[10px] font-black tracking-widest uppercase text-white/40 hover:text-white hover:bg-white/10 rounded-xl mt-2"
-                          >
-                            Add New Service
-                          </Button>
+                {/* ── ROLE TAB ── */}
+                {activeTab === 'role' && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                    <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                      Agent Role
+                    </label>
+                    {((['receptionist', 'sales', 'support', 'assistant'] as AgentRole[])).map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => updateConfig({ role: r })}
+                        className={`flex w-full items-center justify-between rounded-xl border p-4 text-left transition-all duration-200 ${
+                          (config.role || DEFAULT_AGENT_CONFIG.role) === r
+                            ? 'border-cyan-500/50 bg-cyan-500/8'
+                            : 'border-white/6 bg-white/3 hover:border-white/12'
+                        }`}
+                      >
+                        <div>
+                          <div className={`text-xs font-black tracking-widest uppercase ${
+                            (config.role || DEFAULT_AGENT_CONFIG.role) === r ? 'text-cyan-400' : 'text-white/65'
+                          }`}>
+                            {r}
+                          </div>
+                          <div className="mt-0.5 text-[10px] text-white/35">
+                            {r === 'receptionist' && 'Scheduling, greetings & office info'}
+                            {r === 'sales' && 'Product knowledge & lead capture'}
+                            {r === 'support' && 'Help, troubleshooting & escalation'}
+                            {r === 'assistant' && 'General tasks & information'}
+                          </div>
                         </div>
-                      </div>
+                        <ChevronRight
+                          size={14}
+                          className={(config.role || DEFAULT_AGENT_CONFIG.role) === r ? 'text-cyan-400' : 'text-white/15'}
+                        />
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+
+                {/* ── COMPANY TAB ── */}
+                {activeTab === 'company' && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                        Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={config.company?.name || DEFAULT_AGENT_CONFIG.company.name}
+                        onChange={(e) => updateCompanyConfig({ name: e.target.value })}
+                        placeholder="e.g. Acme Corp"
+                        style={{
+                          width: '100%',
+                          height: '3rem',
+                          padding: '0 1rem',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '0.75rem',
+                          color: '#f8fafc',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                        Description
+                      </label>
+                      <textarea
+                        value={config.company?.description || DEFAULT_AGENT_CONFIG.company.description}
+                        onChange={(e) => updateCompanyConfig({ description: e.target.value })}
+                        placeholder="What does your company do?"
+                        rows={3}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '0.75rem',
+                          color: '#f8fafc',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          resize: 'none',
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black tracking-widest text-white/35 uppercase">
+                        Services
+                      </label>
+                      {(config.company?.services || DEFAULT_AGENT_CONFIG.company.services).map((svc, i) => (
+                        <div key={i} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={svc}
+                            onChange={(e) => updateService(i, e.target.value)}
+                            placeholder="e.g. 24/7 support"
+                            style={{
+                              flex: 1,
+                              height: '2.5rem',
+                              padding: '0 0.75rem',
+                              background: 'rgba(255,255,255,0.06)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '0.625rem',
+                              color: '#f8fafc',
+                              fontSize: '0.8125rem',
+                            }}
+                          />
+                          <button
+                            onClick={() => removeService(i)}
+                            className="flex size-10 items-center justify-center rounded-xl border border-white/6 text-white/25 hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={addService}
+                        className="w-full rounded-xl border border-dashed border-white/12 py-2.5 text-[10px] font-black tracking-widest text-white/30 uppercase hover:border-white/25 hover:text-white/60 transition-colors"
+                      >
+                        + Add Service
+                      </button>
                     </div>
                   </motion.div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="p-8 border-t border-white/5">
-                <Button
+              <div className="border-t border-white/6 p-6">
+                <button
                   onClick={onToggle}
-                  className="w-full h-14 bg-white text-black hover:bg-white/90 rounded-2xl font-black tracking-widest uppercase text-xs shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                  className="w-full rounded-2xl bg-white py-3.5 text-xs font-black tracking-widest text-black uppercase shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:bg-white/90 transition-colors"
                 >
                   Apply Configuration
-                </Button>
+                </button>
               </div>
             </motion.div>
           </>
