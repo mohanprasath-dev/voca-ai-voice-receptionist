@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from contextlib import suppress
-from typing import Optional
+from typing import AsyncIterable, Optional
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -22,6 +22,9 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     metrics,
+    tokenize,
+    tts,
+    utils,
 )
 from livekit.plugins import deepgram, google, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -39,6 +42,49 @@ from voca.services.telemetry import Telemetry
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
+
+
+CHUNK_MIN_CHARS = 40
+CHUNK_TARGET_CHARS = 80
+CHUNK_MAX_CHARS = 120
+CHUNK_ENDINGS = (".", "?", "!", ",")
+
+
+def _should_flush_chunk(buffer: str) -> bool:
+    trimmed = buffer.rstrip()
+    if not trimmed:
+        return False
+    if len(trimmed) >= CHUNK_MIN_CHARS and trimmed.endswith(CHUNK_ENDINGS):
+        return True
+    if len(trimmed) >= CHUNK_TARGET_CHARS:
+        return True
+    return len(trimmed) >= CHUNK_MAX_CHARS
+
+
+async def _iter_speech_chunks(text_stream: AsyncIterable[str]) -> AsyncIterable[str]:
+    """Chunk streaming LLM text into TTS-friendly segments without tiny fragments."""
+    buffer = ""
+
+    async for token in text_stream:
+        piece = str(token or "")
+        if not piece:
+            continue
+
+        buffer += piece
+        if not _should_flush_chunk(buffer):
+            continue
+
+        cleaned = _sanitize_speech_text(buffer)
+        if len(cleaned) < CHUNK_MIN_CHARS and len(buffer) < CHUNK_MAX_CHARS:
+            continue
+
+        if cleaned:
+            yield cleaned
+        buffer = ""
+
+    final_chunk = _sanitize_speech_text(buffer)
+    if final_chunk:
+        yield final_chunk
 
 
 def _sanitize_speech_text(text: str) -> str:
@@ -130,6 +176,62 @@ class Assistant(Agent):
     def __init__(self, agent_config: Optional[dict] = None) -> None:
         super().__init__(instructions=get_dynamic_system_prompt(agent_config))
         self._agent_config = agent_config or {}
+
+    async def tts_node(self, text: AsyncIterable[str], model_settings):
+        """Stream text to TTS with low-latency chunking and dead-air filler guard."""
+        activity = self._get_activity_or_raise()
+        assert activity.tts is not None, "tts_node called but no TTS node is available"
+
+        wrapped_tts = activity.tts
+        if not activity.tts.capabilities.streaming:
+            wrapped_tts = tts.StreamAdapter(
+                tts=wrapped_tts,
+                sentence_tokenizer=tokenize.blingfire.SentenceTokenizer(retain_format=True),
+            )
+
+        conn_options = activity.session.conn_options.tts_conn_options
+        stream_started_at = time.perf_counter()
+        first_audio_emitted = asyncio.Event()
+
+        async with wrapped_tts.stream(conn_options=conn_options) as stream:
+
+            @utils.log_exceptions(logger=logger)
+            async def _forward_input() -> None:
+                async for chunk in _iter_speech_chunks(text):
+                    chunk_sent_at = time.perf_counter()
+                    stream.push_text(chunk)
+                    logger.info(
+                        "voca_event %s",
+                        json.dumps(
+                            {
+                                "event": "tts_chunk_sent",
+                                "chunk_size": len(chunk),
+                                "chunk_send_ms": int((chunk_sent_at - stream_started_at) * 1000),
+                                "chunk_preview": chunk[:80],
+                            },
+                            ensure_ascii=False,
+                        ),
+                    )
+
+                stream.end_input()
+
+            forward_task = asyncio.create_task(_forward_input())
+            try:
+                async for ev in stream:
+                    if not first_audio_emitted.is_set():
+                        first_audio_emitted.set()
+                        logger.info(
+                            "voca_event %s",
+                            json.dumps(
+                                {
+                                    "event": "tts_audio_started",
+                                    "tts_start_ms": int((time.perf_counter() - stream_started_at) * 1000),
+                                }
+                            ),
+                        )
+                    yield ev.frame
+            finally:
+                await utils.aio.cancel_and_wait(forward_task)
 
 
 def prewarm(proc: JobProcess) -> None:

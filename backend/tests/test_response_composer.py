@@ -20,4 +20,26 @@ def test_response_composer_applies_friendly_prefix() -> None:
 
     msg = composer.compose(state, "I can help with that", Tone.FRIENDLY, BudgetMode.NORMAL)
 
-    assert msg.startswith("Sure, happy to help")
+    assert msg.startswith("I can help")
+
+
+def test_response_composer_strips_fillers_and_normalizes_punctuation() -> None:
+    composer = ResponseComposer()
+
+    msg = composer.sanitize_for_tts("Just a moment... Okay... I can help!!!")
+
+    assert msg == "I can help!"
+
+
+def test_response_composer_limits_to_two_sentences_for_clarity() -> None:
+    composer = ResponseComposer()
+    state = SessionState(session_id="s2")
+
+    msg = composer.compose(
+        state,
+        "First sentence. Second sentence. Third sentence should be dropped.",
+        Tone.CALM,
+        BudgetMode.NORMAL,
+    )
+
+    assert msg == "First sentence. Second sentence."

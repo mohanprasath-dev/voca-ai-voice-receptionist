@@ -26,6 +26,12 @@ class Tone(str, Enum):
     URGENT = "urgent"
 
 
+class BudgetMode(str, Enum):
+    NORMAL = "normal"
+    NEAR_LIMIT = "near_limit"
+    HARD_LIMIT = "hard_limit"
+
+
 class LanguageSegment(TypedDict):
     text: str
     lang: str
@@ -64,6 +70,13 @@ class TurnOutput(TypedDict):
     queue_position: Optional[int]
     dead_air_filler_used: bool
     telemetry_tags: Dict[str, str]
+
+
+class UsageBudget(TypedDict):
+    stt_seconds: float
+    tts_seconds: float
+    llm_characters: int
+    usage_percentage: float
 
 
 @dataclass

@@ -120,6 +120,8 @@ class SessionOrchestrator:
             filler = self.fallback_service.next_filler()
             text = f"{filler} {text}".strip()
 
+        text = self.composer.sanitize_for_tts(text)
+
         state.last_agent_message = text
         state.phase = "speaking"
         self.store.save(state)
