@@ -7,9 +7,6 @@ import { useSession } from '@/components/app/session-provider';
 import { SessionView } from '@/components/app/session-view';
 import { WelcomeView } from '@/components/app/welcome-view';
 
-const MotionWelcomeView = motion.create(WelcomeView);
-const MotionSessionView = motion.create(SessionView);
-
 const VIEW_MOTION_PROPS = {
   variants: {
     visible: {

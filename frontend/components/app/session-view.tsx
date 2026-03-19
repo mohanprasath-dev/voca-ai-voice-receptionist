@@ -29,7 +29,7 @@ interface SessionViewProps {
   onAnimationComplete?: () => void;
 }
 
-export const SessionView = ({ ...props }: React.ComponentProps<'section'> & SessionViewProps) => {
+export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.ComponentProps<'section'> & SessionViewProps) => {
   useConnectionTimeout(200_000);
 
   const [chatOpen, setChatOpen] = useState(false);

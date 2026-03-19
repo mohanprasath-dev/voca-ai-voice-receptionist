@@ -28,10 +28,8 @@ export function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent position="left" className="w-[300px] border-r border-white/5 bg-[#030303]/90 backdrop-blur-2xl p-8">
-        <Link href="/" className="flex items-center gap-2 mb-12" onClick={() => setOpen(false)}>
-          <span className="text-[14px] font-black tracking-[0.2em] text-white uppercase">
-            Voca
-          </span>
+        <Link href="/" className="mb-12 flex items-center" onClick={() => setOpen(false)}>
+          <span className="text-[14px] font-black tracking-[0.2em] text-white uppercase">VOCA</span>
         </Link>
         <div className="flex flex-col space-y-6">
           {NAV_LINKS.map((link) => (

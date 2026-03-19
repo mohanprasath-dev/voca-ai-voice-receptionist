@@ -67,7 +67,13 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body className="overflow-x-hidden bg-[#030303]">
         <div className="relative min-h-screen">
-          <Aurora className="absolute inset-0 -z-10" />
+          <Aurora
+            className="fixed inset-0 -z-10 h-full w-full"
+            colorStops={['#06b6d4', '#3b82f6', '#7c3aed']}
+            amplitude={1.0}
+            blend={0.5}
+            speed={0.4}
+          />
           <main className="relative z-10 flex flex-col min-h-screen">
             {children}
           </main>

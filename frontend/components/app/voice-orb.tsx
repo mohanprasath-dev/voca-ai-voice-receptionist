@@ -1,6 +1,7 @@
+'use client';
+
 import React from 'react';
 import { motion } from 'motion/react';
-import type { Variants } from 'motion/react';
 import type { VoicePhase } from '@/lib/contracts';
 import { cn } from '@/lib/utils';
 
@@ -10,159 +11,222 @@ interface VoiceOrbProps {
   isSessionActive: boolean;
 }
 
+const PHASE_COLORS: Record<VoicePhase, { primary: string; glow: string; ring: string }> = {
+  idle: {
+    primary: 'rgba(255,255,255,0.08)',
+    glow: 'rgba(255,255,255,0.04)',
+    ring: 'rgba(255,255,255,0.08)',
+  },
+  listening: {
+    primary: 'rgba(34,211,238,0.9)',
+    glow: 'rgba(34,211,238,0.35)',
+    ring: 'rgba(34,211,238,0.4)',
+  },
+  reasoning: {
+    primary: 'rgba(99,102,241,0.9)',
+    glow: 'rgba(99,102,241,0.35)',
+    ring: 'rgba(99,102,241,0.4)',
+  },
+  speaking: {
+    primary: 'rgba(255,255,255,0.95)',
+    glow: 'rgba(255,255,255,0.30)',
+    ring: 'rgba(255,255,255,0.3)',
+  },
+  awaiting_confirmation: {
+    primary: 'rgba(34,211,238,0.9)',
+    glow: 'rgba(34,211,238,0.30)',
+    ring: 'rgba(34,211,238,0.3)',
+  },
+  escalated: {
+    primary: 'rgba(99,102,241,0.9)',
+    glow: 'rgba(99,102,241,0.30)',
+    ring: 'rgba(99,102,241,0.3)',
+  },
+  ended: {
+    primary: 'rgba(244,63,94,0.7)',
+    glow: 'rgba(244,63,94,0.20)',
+    ring: 'rgba(244,63,94,0.2)',
+  },
+};
+
 export function VoiceOrb({ phase, className, isSessionActive }: VoiceOrbProps) {
-  if (!isSessionActive) {
-    return (
-      <div
-        className={cn('relative flex size-48 items-center justify-center md:size-64', className)}
-      >
-        <div className="glass absolute inset-0 rounded-full" />
-      </div>
-    );
-  }
+  const colors = PHASE_COLORS[phase] ?? PHASE_COLORS.idle;
+  const isActive = isSessionActive;
 
-  const orbVariants: Variants = {
-    idle: { scale: 1, filter: 'blur(10px)', opacity: 0.45 },
-    listening: {
-      scale: [1, 1.05, 1],
-      filter: 'blur(12px)',
-      opacity: [0.6, 0.8, 0.6],
-      transition: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
-    },
-    reasoning: {
-      scale: [1, 1.03, 1],
-      filter: 'blur(18px)',
-      opacity: [0.5, 0.95, 0.55],
-      transition: { repeat: Infinity, duration: 1.3, ease: 'easeInOut' },
-    },
-    speaking: {
-      scale: [1, 1.2, 1.05, 1.25, 1],
-      filter: 'blur(8px)',
-      opacity: [0.8, 1, 0.9, 1, 0.8],
-      transition: { repeat: Infinity, duration: 0.8, ease: 'easeInOut' },
-    },
-    awaiting_confirmation: { scale: 1, filter: 'blur(4px)', opacity: 0.8 },
-    escalated: { scale: 1, filter: 'blur(4px)', opacity: 0.8 },
-    ended: { scale: 0.9, filter: 'blur(10px)', opacity: 0.2 },
-  };
-
-  const coreVariants: Variants = {
-    idle: { scale: 1 },
-    listening: {
-      scale: [1, 1.1, 1],
-      transition: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
-    },
-    reasoning: {
-      rotate: 360,
-      transition: { repeat: Infinity, duration: 3.2, ease: 'linear' },
-    },
-    speaking: {
-      scale: [1, 1.3, 1.1, 1.4, 1],
-      transition: { repeat: Infinity, duration: 0.8, ease: 'easeInOut' },
-    },
-    awaiting_confirmation: { scale: 1 },
-    escalated: { scale: 1 },
-    ended: { scale: 0.9 },
-  };
-
-  const ringVariants: Variants = {
-    idle: { opacity: 0, scale: 0.8 },
-    listening: {
-      opacity: [0, 0.5, 0],
-      scale: [0.8, 2],
-      transition: { repeat: Infinity, duration: 2, ease: 'easeOut' },
-    },
-    reasoning: { opacity: 0, scale: 0.8 },
-    speaking: { opacity: 0, scale: 0.8 },
-    awaiting_confirmation: { opacity: 0 },
-    escalated: { opacity: 0 },
-    ended: { opacity: 0 },
-  };
-
-  const ringVariantsDelayed: Variants = {
-    idle: { opacity: 0, scale: 0.8 },
-    listening: {
-      opacity: [0, 0.3, 0],
-      scale: [0.8, 2.5],
-      transition: { repeat: Infinity, duration: 2, delay: 0.5, ease: 'easeOut' },
-    },
-    reasoning: { opacity: 0, scale: 0.8 },
-    speaking: { opacity: 0, scale: 0.8 },
-    awaiting_confirmation: { opacity: 0 },
-    escalated: { opacity: 0 },
-    ended: { opacity: 0 },
-  };
-
-  const colorMap: Record<string, string> = {
-    idle: 'bg-white/20',
-    listening: 'bg-cyan-400',
-    reasoning: 'bg-blue-400',
-    speaking: 'bg-white',
-    awaiting_confirmation: 'bg-cyan-500',
-    escalated: 'bg-blue-500',
-    ended: 'bg-rose-500',
-  };
-
-  const activeColor = colorMap[phase] || colorMap.idle;
-  // Use string manipulation to get border color for rings based on background color class
-  const ringColor = activeColor.replace('bg-', 'border-');
-
-  const shadowMap: Record<string, string> = {
-    idle: '0 0 40px rgba(255,255,255,0.12)',
-    listening: '0 0 70px rgba(34,211,238,0.30)',
-    reasoning: '0 0 75px rgba(99,102,241,0.28)',
-    speaking: '0 0 95px rgba(255,255,255,0.22), 0 0 140px rgba(34,211,238,0.22)',
-    awaiting_confirmation: '0 0 70px rgba(34,211,238,0.28)',
-    escalated: '0 0 70px rgba(99,102,241,0.28)',
-    ended: '0 0 50px rgba(244,63,94,0.18)',
-  };
+  const isListening = phase === 'listening';
+  const isReasoning = phase === 'reasoning';
+  const isSpeaking = phase === 'speaking';
 
   return (
-    <div className={cn('relative flex size-48 items-center justify-center md:size-64', className)}>
-      {/* Expanding Rings for Listening State */}
-      <motion.div
-        variants={ringVariants}
-        animate={phase}
-        initial="idle"
-        className={cn('absolute inset-0 rounded-full border-2', ringColor)}
-      />
-      <motion.div
-        variants={ringVariantsDelayed}
-        animate={phase}
-        initial="idle"
-        className={cn('absolute inset-0 rounded-full border', ringColor)}
-      />
+    <div
+      className={cn('relative flex items-center justify-center', className)}
+      style={{ width: 220, height: 220 }}
+    >
+      {isActive && isListening && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{ width: 220, height: 220, border: `1px solid ${colors.ring}` }}
+          animate={{ scale: [1, 1.6, 2.2], opacity: [0.6, 0.2, 0] }}
+          transition={{ repeat: Infinity, duration: 2.4, ease: 'easeOut' }}
+        />
+      )}
+      {isActive && isListening && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{ width: 220, height: 220, border: `1px solid ${colors.ring}` }}
+          animate={{ scale: [1, 1.5, 2.0], opacity: [0.4, 0.15, 0] }}
+          transition={{ repeat: Infinity, duration: 2.4, delay: 0.6, ease: 'easeOut' }}
+        />
+      )}
 
-      {/* Outer Glow Orb */}
-      <motion.div
-        variants={orbVariants}
-        animate={phase}
-        initial="idle"
-        style={{ boxShadow: shadowMap[phase] ?? shadowMap.idle }}
-        className={cn('absolute inset-0 rounded-full opacity-55 mix-blend-screen', activeColor)}
-      />
+      {isActive && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{ width: 180, height: 180, background: colors.glow, filter: 'blur(40px)' }}
+          animate={
+            isSpeaking
+              ? { scale: [1, 1.3, 1.1, 1.4, 1.1, 1], opacity: [0.7, 1, 0.85, 1, 0.85, 0.7] }
+              : isListening
+                ? { scale: [1, 1.15, 1], opacity: [0.5, 0.85, 0.5] }
+                : isReasoning
+                  ? { scale: [1, 1.05, 1], opacity: [0.4, 0.7, 0.4] }
+                  : { scale: 1, opacity: 0.2 }
+          }
+          transition={
+            isSpeaking
+              ? { repeat: Infinity, duration: 0.7, ease: 'easeInOut' }
+              : isListening
+                ? { repeat: Infinity, duration: 2.0, ease: 'easeInOut' }
+                : isReasoning
+                  ? { repeat: Infinity, duration: 1.8, ease: 'easeInOut' }
+                  : {}
+          }
+        />
+      )}
 
-      {/* Inner Solid Core */}
       <motion.div
-        variants={coreVariants}
-        animate={phase}
-        initial="idle"
-        className={cn(
-          'relative size-24 rounded-full border border-white/20 md:size-32',
-          activeColor
-        )}
+        className="absolute rounded-full"
         style={{
-          boxShadow:
-            phase === 'speaking'
-              ? '0 0 70px rgba(255,255,255,0.22), 0 0 120px rgba(34,211,238,0.22)'
-              : phase === 'reasoning'
-                ? '0 0 85px rgba(99,102,241,0.25)'
-                : '0 0 80px rgba(34,211,238,0.22)',
+          width: 140,
+          height: 140,
+          border: `1px solid ${isActive ? colors.ring : 'rgba(255,255,255,0.06)'}`,
         }}
+        animate={
+          isReasoning ? { rotate: 360 } : isListening ? { scale: [1, 1.04, 1] } : { scale: 1 }
+        }
+        transition={
+          isReasoning
+            ? { repeat: Infinity, duration: 4, ease: 'linear' }
+            : isListening
+              ? { repeat: Infinity, duration: 2.2, ease: 'easeInOut' }
+              : {}
+        }
       />
 
-      {/* Core Highlight */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 size-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/18 blur-md md:size-16" />
+      {isActive && isReasoning && (
+        <motion.div
+          className="absolute rounded-full"
+          style={{
+            width: 160,
+            height: 160,
+            border: '1px dashed rgba(99,102,241,0.25)',
+          }}
+          animate={{ rotate: -360 }}
+          transition={{ repeat: Infinity, duration: 7, ease: 'linear' }}
+        />
+      )}
+
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: 100,
+          height: 100,
+          background: isActive
+            ? `radial-gradient(circle at 38% 35%, rgba(255,255,255,0.25) 0%, ${colors.primary} 55%, rgba(0,0,0,0.15) 100%)`
+            : 'radial-gradient(circle at 38% 35%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.03) 100%)',
+          boxShadow: isActive
+            ? `0 0 60px ${colors.glow}, 0 0 120px ${colors.glow}, inset 0 1px 0 rgba(255,255,255,0.2)`
+            : '0 0 20px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(4px)',
+        }}
+        animate={
+          isSpeaking
+            ? { scale: [1, 1.18, 1.05, 1.22, 1.04, 1] }
+            : isListening
+              ? { scale: [1, 1.08, 1] }
+              : isReasoning
+                ? { scale: [1, 1.04, 1] }
+                : { scale: 1 }
+        }
+        transition={
+          isSpeaking
+            ? { repeat: Infinity, duration: 0.65, ease: 'easeInOut' }
+            : isListening
+              ? { repeat: Infinity, duration: 2.0, ease: 'easeInOut' }
+              : isReasoning
+                ? { repeat: Infinity, duration: 1.8, ease: 'easeInOut' }
+                : {}
+        }
+      >
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: 36,
+            height: 36,
+            top: 12,
+            left: 14,
+            background: 'radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 70%)',
+            filter: 'blur(6px)',
+          }}
+        />
+      </motion.div>
+
+      {isActive && isReasoning && (
+        <>
+          {[0, 120, 240].map((deg, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                width: 5,
+                height: 5,
+                background: colors.primary,
+                boxShadow: `0 0 8px ${colors.glow}`,
+                top: '50%',
+                left: '50%',
+                originX: '50%',
+                originY: '50%',
+              }}
+              animate={{
+                rotate: [deg, deg + 360],
+                x: [
+                  Math.cos((deg * Math.PI) / 180) * 68,
+                  Math.cos(((deg + 360) * Math.PI) / 180) * 68,
+                ],
+                y: [
+                  Math.sin((deg * Math.PI) / 180) * 68,
+                  Math.sin(((deg + 360) * Math.PI) / 180) * 68,
+                ],
+                opacity: [0.8, 0.3, 0.8],
+              }}
+              transition={{ repeat: Infinity, duration: 2.5 + i * 0.3, ease: 'linear' }}
+            />
+          ))}
+        </>
+      )}
+
+      {!isActive && (
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: 100,
+            height: 100,
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            backdropFilter: 'blur(8px)',
+          }}
+        />
+      )}
     </div>
   );
 }

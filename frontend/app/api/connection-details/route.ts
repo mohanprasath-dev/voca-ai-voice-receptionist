@@ -7,7 +7,7 @@ type ConnectionDetails = {
   roomName: string;
   participantName: string;
   participantToken: string;
-  agentConfig?: any; // Pass agent config to backend
+  agentConfig?: Record<string, unknown>; // Pass agent config to backend
 };
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:

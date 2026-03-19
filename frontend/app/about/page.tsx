@@ -186,13 +186,13 @@ export default function AboutPage() {
             </div>
             
             <div className="relative">
-              <Lanyard 
+              <Lanyard
                 name="Mohan Prasath P"
                 role="AI Engineer / Builder"
                 socials={{
-                  linkedin: "mohanprasath21",
-                  github: "mohanprasath-dev",
-                  website: "www.mohanprasath.dev"
+                  linkedin: 'mohanprasath21',
+                  github: 'mohanprasath-dev',
+                  website: 'www.mohanprasath.dev',
                 }}
               />
             </div>
