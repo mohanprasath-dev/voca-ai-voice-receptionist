@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { Microphone, ShieldCheck, SpeakerHigh } from '@phosphor-icons/react';
+import * as Icons from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
+import { BlurText } from '../reactbits/BlurText';
+import { SpotlightCard } from '../reactbits/SpotlightCard';
 
 interface WelcomeViewProps {
   startButtonText: string;
@@ -18,38 +20,38 @@ export const WelcomeView = ({
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   return (
     <div
-      className="ambient-bg noise-overlay relative flex h-full w-full items-center justify-center overflow-hidden p-6"
+      className="ambient-bg noise-overlay relative flex min-h-screen h-full w-full items-center justify-center overflow-hidden p-6 pt-24 bg-[#030303]"
       {...props}
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-[-220px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-500/18 blur-[140px]" />
-        <div className="absolute bottom-[-260px] left-[10%] h-[600px] w-[600px] rounded-full bg-indigo-500/12 blur-[160px]" />
+        <div className="absolute top-[-220px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-cyan-500/10 blur-[140px]" />
+        <div className="absolute bottom-[-260px] left-[10%] h-[600px] w-[600px] rounded-full bg-blue-600/10 blur-[160px]" />
       </div>
 
-      <Container className="relative z-10 max-w-2xl text-center">
+      <Container className="relative z-10 max-w-4xl text-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="glass mb-10 inline-flex size-24 items-center justify-center rounded-[2rem] shadow-[0_0_70px_rgba(34,211,238,0.12)]"
+          initial={{ opacity: 0, scale: 0.9, rotate: -10 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', damping: 15 }}
+          className="mb-10 inline-flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 shadow-[0_0_50px_rgba(34,211,238,0.1)]"
         >
-          <SpeakerHigh className="size-10 text-white/90" weight="fill" />
+          <Icons.SpeakerHighIcon className="size-8 text-cyan-400" weight="duotone" />
         </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl"
-        >
-          <span className="text-gradient-ai">Premium</span> voice,
-          <br />
-          in real time.
-        </motion.h1>
+        <div className="mb-6 flex justify-center">
+          <BlurText
+            text="Premium Voice Experiences"
+            delay={100}
+            animateBy="words"
+            className="text-4xl font-black tracking-tight text-white sm:text-7xl"
+          />
+        </div>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mt-6 text-lg leading-relaxed text-white/70"
+          transition={{ delay: 0.4 }}
+          className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-white/50 font-medium"
         >
           Talk naturally. Interrupt anytime. Voca listens, thinks, and responds with
           production-grade latency.
@@ -58,43 +60,44 @@ export const WelcomeView = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.6 }}
           className="mt-12"
         >
           <Button
             size="lg"
             onClick={onStartCall}
-            variant="glow"
-            className="glass h-16 px-12 text-lg font-bold tracking-wide shadow-[0_0_70px_rgba(34,211,238,0.12)] transition-transform active:scale-[0.98]"
+            className="relative overflow-hidden group bg-white text-black hover:bg-white/90 px-12 h-16 rounded-2xl font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_40px_rgba(255,255,255,0.1)]"
           >
-            {startButtonText}
+            <span className="relative z-10 flex items-center gap-2">
+              {startButtonText}
+              <motion.span
+                animate={{ x: [0, 4, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+              >
+                →
+              </motion.span>
+            </span>
           </Button>
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-16 grid grid-cols-1 gap-6 border-t border-white/10 pt-10 sm:grid-cols-3"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="mt-24 grid grid-cols-1 gap-6 sm:grid-cols-3"
         >
-          <div className="glass flex flex-col items-center gap-2 rounded-2xl px-5 py-4">
-            <Microphone className="size-5 text-emerald-400" weight="bold" />
-            <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
-              Voice Enabled
-            </span>
-          </div>
-          <div className="glass flex flex-col items-center gap-2 rounded-2xl px-5 py-4">
-            <ShieldCheck className="size-5 text-blue-400" weight="bold" />
-            <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
-              Secure Path
-            </span>
-          </div>
-          <div className="glass flex flex-col items-center gap-2 rounded-2xl px-5 py-4">
-            <SpeakerHigh className="size-5 text-amber-400" weight="bold" />
-            <span className="text-[10px] font-bold tracking-widest text-white/60 uppercase">
-              Real-time Audio
-            </span>
-          </div>
+          {[
+            { icon: Icons.MicrophoneIcon, label: 'Voice Enabled', color: 'text-emerald-400' },
+            { icon: Icons.ShieldCheckIcon, label: 'Secure Path', color: 'text-blue-400' },
+            { icon: Icons.SpeakerHighIcon, label: 'Real-time Audio', color: 'text-amber-400' }
+          ].map((item, i) => (
+            <SpotlightCard key={i} className="flex flex-col items-center gap-3 p-6 bg-white/5 border-white/5 group transition-all duration-300 hover:bg-white/10">
+              <item.icon className={`size-6 ${item.color}`} weight="duotone" />
+              <span className="text-[10px] font-black tracking-[0.2em] text-white/40 uppercase group-hover:text-white/70 transition-colors">
+                {item.label}
+              </span>
+            </SpotlightCard>
+          ))}
         </motion.div>
       </Container>
     </div>

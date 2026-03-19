@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MonitorIcon, MoonIcon, SunIcon } from '@phosphor-icons/react';
+import * as Icons from '@phosphor-icons/react';
 import { THEME_MEDIA_QUERY, THEME_STORAGE_KEY, cn } from '@/lib/utils';
 
 const THEME_SCRIPT = `
@@ -77,7 +77,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         className="cursor-pointer p-1 pl-1.5"
       >
         <span className="sr-only">Enable dark color scheme</span>
-        <MoonIcon size={16} weight="bold" className={cn(theme !== 'dark' && 'opacity-25')} />
+        <Icons.MoonIcon size={16} weight="bold" className={cn(theme !== 'dark' && 'opacity-25')} />
       </button>
       <button
         type="button"
@@ -85,7 +85,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         className="cursor-pointer px-1.5 py-1"
       >
         <span className="sr-only">Enable light color scheme</span>
-        <SunIcon size={16} weight="bold" className={cn(theme !== 'light' && 'opacity-25')} />
+        <Icons.SunIcon size={16} weight="bold" className={cn(theme !== 'light' && 'opacity-25')} />
       </button>
       <button
         type="button"
@@ -93,7 +93,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         className="cursor-pointer p-1 pr-1.5"
       >
         <span className="sr-only">Enable system color scheme</span>
-        <MonitorIcon size={16} weight="bold" className={cn(theme !== 'system' && 'opacity-25')} />
+        <Icons.MonitorIcon size={16} weight="bold" className={cn(theme !== 'system' && 'opacity-25')} />
       </button>
     </div>
   );

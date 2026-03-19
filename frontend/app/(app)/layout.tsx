@@ -14,7 +14,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="bg-background text-foreground flex min-h-[100dvh] flex-col overflow-hidden">
-      {!isDemo && <Navbar />}
+      <Navbar />
       <main className="flex flex-1 flex-col">{children}</main>
       {!isDemo && <Footer />}
     </div>

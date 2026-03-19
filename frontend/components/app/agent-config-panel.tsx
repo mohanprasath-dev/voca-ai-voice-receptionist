@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Settings, Globe, User, Building, MessageSquare } from 'lucide-react';
+import { X, Settings, Globe, User, Building, ChevronRight } from 'lucide-react';
 import { AgentConfig, DEFAULT_AGENT_CONFIG, SUPPORTED_LANGUAGES, AVAILABLE_VOICES } from '@/types/agent-config';
 import { Button } from '@/components/ui/button';
-import { GlassCard } from '@/components/ui/glass-card';
+import { SpotlightCard } from '@/components/reactbits/SpotlightCard';
 
 interface AgentConfigPanelProps {
   config: Partial<AgentConfig>;
@@ -61,37 +61,50 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
         onClick={onToggle}
         variant="outline"
         size="sm"
-        className="fixed top-4 right-4 z-40 bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20"
+        className="fixed bottom-10 left-8 z-40 bg-white/5 backdrop-blur-xl border-white/10 text-white/70 hover:text-white hover:bg-white/10 rounded-xl px-4 h-12 transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.3)]"
       >
         <Settings className="w-4 h-4 mr-2" />
-        Agent Config
+        Configure Agent
       </Button>
 
       {/* Configuration Panel */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 300 }}
-            className="fixed right-0 top-0 h-full w-96 bg-black/80 backdrop-blur-xl border-l border-white/10 z-50 overflow-hidden"
-          >
-            <div className="flex flex-col h-full">
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onToggle}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, x: 400 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 400 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full w-full max-w-md bg-[#080808] border-l border-white/5 z-[70] shadow-2xl flex flex-col"
+            >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-white/10">
-                <h2 className="text-xl font-semibold text-white">Agent Configuration</h2>
+              <div className="flex items-center justify-between p-8 border-b border-white/5">
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight text-white">Agent Persona</h2>
+                  <p className="text-xs text-white/40 font-medium mt-1 uppercase tracking-widest">Customize your voice experience</p>
+                </div>
                 <Button
                   onClick={onToggle}
                   variant="ghost"
                   size="sm"
-                  className="text-white/60 hover:text-white hover:bg-white/10"
+                  className="size-10 rounded-full text-white/40 hover:text-white hover:bg-white/5"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-white/10">
+              <div className="flex p-2 bg-white/5 mx-8 mt-8 rounded-2xl gap-1">
                 {[
                   { id: 'voice', label: 'Voice', icon: Globe },
                   { id: 'role', label: 'Role', icon: User },
@@ -100,73 +113,75 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                   <button
                     key={id}
                     onClick={() => setActiveTab(id as any)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-300 ${
                       activeTab === id
-                        ? 'text-white border-b-2 border-cyan-500 bg-white/5'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                        ? 'text-white bg-white/10 shadow-lg'
+                        : 'text-white/30 hover:text-white/60'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                     {label}
                   </button>
                 ))}
               </div>
 
-              {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
                 {activeTab === 'voice' && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-6"
                   >
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Language
-                      </label>
-                      <select
-                        value={config.language || DEFAULT_AGENT_CONFIG.language}
-                        onChange={(e) => updateConfig({ language: e.target.value })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                      >
-                        {SUPPORTED_LANGUAGES.map((lang) => (
-                          <option key={lang} value={lang}>
-                            {lang.toUpperCase()} - {new Intl.DisplayNames([lang], { type: 'language' }).of(lang)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Native Language</label>
+                        <select
+                          value={config.language || DEFAULT_AGENT_CONFIG.language}
+                          onChange={(e) => updateConfig({ language: e.target.value })}
+                          className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white appearance-none focus:outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
+                        >
+                          {SUPPORTED_LANGUAGES.map((lang) => (
+                            <option key={lang} value={lang} className="bg-[#080808]">
+                              {lang.toUpperCase()} - {new Intl.DisplayNames([lang], { type: 'language' }).of(lang)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Voice
-                      </label>
-                      <select
-                        value={config.voice_id || DEFAULT_AGENT_CONFIG.voice_id}
-                        onChange={(e) => updateConfig({ voice_id: e.target.value as any })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                      >
-                        {AVAILABLE_VOICES.map((voice) => (
-                          <option key={voice} value={voice}>
-                            {voice}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Voice Profile</label>
+                        <select
+                          value={config.voice_id || DEFAULT_AGENT_CONFIG.voice_id}
+                          onChange={(e) => updateConfig({ voice_id: e.target.value as any })}
+                          className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white appearance-none focus:outline-none focus:border-cyan-500/50 transition-colors cursor-pointer"
+                        >
+                          {AVAILABLE_VOICES.map((voice) => (
+                            <option key={voice} value={voice} className="bg-[#080808]">
+                              {voice.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Tone
-                      </label>
-                      <select
-                        value={config.tone || DEFAULT_AGENT_CONFIG.tone}
-                        onChange={(e) => updateConfig({ tone: e.target.value as any })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                      >
-                        <option value="friendly">Friendly</option>
-                        <option value="calm">Calm</option>
-                        <option value="urgent">Urgent</option>
-                      </select>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Conversational Tone</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['friendly', 'calm', 'urgent'].map((t) => (
+                            <button
+                              key={t}
+                              onClick={() => updateConfig({ tone: t as any })}
+                              className={`h-10 rounded-xl text-[10px] font-black tracking-widest uppercase border transition-all duration-300 ${
+                                (config.tone || DEFAULT_AGENT_CONFIG.tone) === t
+                                  ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-400'
+                                  : 'bg-white/5 border-white/5 text-white/30 hover:text-white/60'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -177,31 +192,39 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-6"
                   >
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Agent Role
-                      </label>
-                      <select
-                        value={config.role || DEFAULT_AGENT_CONFIG.role}
-                        onChange={(e) => updateConfig({ role: e.target.value as any })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                      >
-                        <option value="receptionist">Receptionist</option>
-                        <option value="sales">Sales</option>
-                        <option value="support">Support</option>
-                        <option value="assistant">Assistant</option>
-                      </select>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">System Instructions</label>
+                      <div className="grid grid-cols-1 gap-3">
+                        {['receptionist', 'sales', 'support', 'assistant'].map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => updateConfig({ role: r as any })}
+                            className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 text-left ${
+                              (config.role || DEFAULT_AGENT_CONFIG.role) === r
+                                ? 'bg-cyan-500/10 border-cyan-500/50'
+                                : 'bg-white/5 border-white/5 hover:border-white/10'
+                            }`}
+                          >
+                            <div>
+                              <div className={`text-xs font-black tracking-widest uppercase mb-1 ${
+                                (config.role || DEFAULT_AGENT_CONFIG.role) === r ? 'text-cyan-400' : 'text-white/70'
+                              }`}>
+                                {r}
+                              </div>
+                              <div className="text-[10px] text-white/40 font-medium">
+                                {r === 'receptionist' && 'Appointment scheduling & office info'}
+                                {r === 'sales' && 'Product knowledge & lead capture'}
+                                {r === 'support' && 'Technical help & troubleshooting'}
+                                {r === 'assistant' && 'General productivity & information'}
+                              </div>
+                            </div>
+                            <ChevronRight size={16} className={
+                              (config.role || DEFAULT_AGENT_CONFIG.role) === r ? 'text-cyan-400' : 'text-white/20'
+                            } />
+                          </button>
+                        ))}
+                      </div>
                     </div>
-
-                    <GlassCard className="p-4">
-                      <h4 className="text-sm font-medium text-white/80 mb-2">Role Description</h4>
-                      <p className="text-xs text-white/60">
-                        {config.role === 'receptionist' && 'Handles appointments, directions, and basic inquiries.'}
-                        {config.role === 'sales' && 'Focuses on product information, pricing, and lead generation.'}
-                        {config.role === 'support' && 'Provides technical assistance and troubleshooting.'}
-                        {config.role === 'assistant' && 'General purpose help with various tasks and information.'}
-                      </p>
-                    </GlassCard>
                   </motion.div>
                 )}
 
@@ -211,84 +234,75 @@ export const AgentConfigPanel: React.FC<AgentConfigPanelProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-6"
                   >
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Company Name
-                      </label>
-                      <input
-                        type="text"
-                        value={config.company?.name || DEFAULT_AGENT_CONFIG.company.name}
-                        onChange={(e) => updateCompanyConfig({ name: e.target.value })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="Company name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Description
-                      </label>
-                      <textarea
-                        value={config.company?.description || DEFAULT_AGENT_CONFIG.company.description}
-                        onChange={(e) => updateCompanyConfig({ description: e.target.value })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
-                        rows={3}
-                        placeholder="What your company does"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Services
-                      </label>
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        {(config.company?.services || DEFAULT_AGENT_CONFIG.company.services).map((service, index) => (
-                          <div key={index} className="flex gap-2">
-                            <input
-                              type="text"
-                              value={service}
-                              onChange={(e) => updateService(index, e.target.value)}
-                              className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                              placeholder="Service description"
-                            />
-                            <Button
-                              onClick={() => removeService(index)}
-                              variant="ghost"
-                              size="sm"
-                              className="text-white/60 hover:text-white hover:bg-white/10"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        ))}
-                        <Button
-                          onClick={addService}
-                          variant="outline"
-                          size="sm"
-                          className="w-full border-white/20 text-white/60 hover:text-white hover:bg-white/10"
-                        >
-                          Add Service
-                        </Button>
+                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Organization Identity</label>
+                        <input
+                          type="text"
+                          value={config.company?.name || DEFAULT_AGENT_CONFIG.company.name}
+                          onChange={(e) => updateCompanyConfig({ name: e.target.value })}
+                          className="w-full h-12 px-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                          placeholder="Company name"
+                        />
                       </div>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-white/80 mb-2">
-                        Custom Instructions
-                      </label>
-                      <textarea
-                        value={config.company?.custom_instructions || DEFAULT_AGENT_CONFIG.company.custom_instructions}
-                        onChange={(e) => updateCompanyConfig({ custom_instructions: e.target.value })}
-                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
-                        rows={3}
-                        placeholder="Specific instructions for the agent"
-                      />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Core Mission</label>
+                        <textarea
+                          value={config.company?.description || DEFAULT_AGENT_CONFIG.company.description}
+                          onChange={(e) => updateCompanyConfig({ description: e.target.value })}
+                          className="w-full p-4 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:outline-none focus:border-cyan-500/50 transition-colors resize-none h-24"
+                          placeholder="Describe your organization..."
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black tracking-widest text-white/30 uppercase ml-1">Key Services</label>
+                        <div className="space-y-2">
+                          {(config.company?.services || DEFAULT_AGENT_CONFIG.company.services).map((service, index) => (
+                            <div key={index} className="flex gap-2">
+                              <input
+                                type="text"
+                                value={service}
+                                onChange={(e) => updateService(index, e.target.value)}
+                                className="flex-1 h-10 px-4 bg-white/5 border border-white/5 rounded-xl text-xs font-medium text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                                placeholder="e.g. 24/7 technical support"
+                              />
+                              <Button
+                                onClick={() => removeService(index)}
+                                variant="ghost"
+                                size="sm"
+                                className="size-10 rounded-xl text-white/20 hover:text-red-400 hover:bg-red-400/10"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            onClick={addService}
+                            variant="outline"
+                            className="w-full h-10 border-white/5 bg-white/5 text-[10px] font-black tracking-widest uppercase text-white/40 hover:text-white hover:bg-white/10 rounded-xl mt-2"
+                          >
+                            Add New Service
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </div>
-            </div>
-          </motion.div>
+
+              {/* Footer */}
+              <div className="p-8 border-t border-white/5">
+                <Button
+                  onClick={onToggle}
+                  className="w-full h-14 bg-white text-black hover:bg-white/90 rounded-2xl font-black tracking-widest uppercase text-xs shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                >
+                  Apply Configuration
+                </Button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

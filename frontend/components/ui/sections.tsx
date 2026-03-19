@@ -2,14 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import {
-  ChartPieSlice,
-  Cpu,
-  Globe,
-  Lightning,
-  Microphone,
-  SpeakerHigh,
-} from '@phosphor-icons/react';
+import * as Icons from '@phosphor-icons/react';
 import { Button } from './button';
 import { Container } from './container';
 import { GlassButton } from './glass-button';
@@ -20,32 +13,32 @@ const FEATURES = [
     title: 'Ultra-Low Latency',
     description:
       'Powered by Murf Falcon, experience response times that feel natural and human-like.',
-    icon: Lightning,
+    icon: Icons.LightningIcon,
   },
   {
     title: 'Voice-First UX',
     description: 'Replaces traditional interfaces with an intuitive conversational flow.',
-    icon: SpeakerHigh,
+    icon: Icons.SpeakerHighIcon,
   },
   {
     title: 'Multilingual Support',
     description: 'Seamlessly switch between languages with native-level fluency and accent.',
-    icon: Globe,
+    icon: Icons.GlobeIcon,
   },
   {
     title: 'Intent Intelligence',
     description: 'Advanced NLU to understand complex requests and provide accurate responses.',
-    icon: Cpu,
+    icon: Icons.CpuIcon,
   },
   {
     title: 'Real-time Analytics',
     description: 'Monitor session health, budget, and performance metrics as they happen.',
-    icon: ChartPieSlice,
+    icon: Icons.ChartPieSliceIcon,
   },
   {
     title: 'Crystal Clear Audio',
     description: 'High-fidelity voice synthesis that captures emotion and nuance.',
-    icon: Microphone,
+    icon: Icons.MicrophoneIcon,
   },
 ];
 

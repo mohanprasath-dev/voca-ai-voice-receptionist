@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { GithubLogo, Globe, LinkedinLogo } from '@phosphor-icons/react';
+import * as Icons from '@phosphor-icons/react';
 import { Container } from './container';
 
 export const Footer = () => {
@@ -66,7 +66,7 @@ export const Footer = () => {
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="GitHub"
                 >
-                  <GithubLogo size={20} weight="fill" />
+                  <Icons.GithubLogoIcon size={20} weight="fill" />
                 </a>
                 <a
                   href="https://linkedin.com/in/mohanprasath21"
@@ -75,7 +75,7 @@ export const Footer = () => {
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="LinkedIn"
                 >
-                  <LinkedinLogo size={20} weight="fill" />
+                  <Icons.LinkedinLogoIcon size={20} weight="fill" />
                 </a>
                 <a
                   href="https://www.mohanprasath.dev"
@@ -84,7 +84,7 @@ export const Footer = () => {
                   className="text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="Portfolio"
                 >
-                  <Globe size={20} weight="fill" />
+                  <Icons.GlobeIcon size={20} weight="fill" />
                 </a>
               </div>
             </div>

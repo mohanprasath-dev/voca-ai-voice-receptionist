@@ -241,12 +241,64 @@ def _resolve_detected_language(
     return normalized
 
 
-async def entrypoint(ctx: JobContext, user_config: Optional[dict] = None):
+async def entrypoint(ctx: JobContext):
     # Logging setup
-    # Add any other context you want in all log entries here
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
+
+    max_connect_attempts = 3
+    base_retry_delay_seconds = 1.0
+
+    # Connect first to ensure room operations are safe.
+    for attempt in range(1, max_connect_attempts + 1):
+        print("🔌 Connecting to room...")
+        logger.info(
+            "Connecting to room",
+            extra={
+                "room_name": ctx.room.name,
+                "attempt": attempt,
+                "max_attempts": max_connect_attempts,
+            },
+        )
+        try:
+            await ctx.connect()
+            print("✅ Connected")
+            logger.info(
+                "Connected to room",
+                extra={"room_name": ctx.room.name, "attempt": attempt},
+            )
+            break
+        except Exception as connect_error:
+            print(f"❌ Failed to connect: {connect_error}")
+            logger.exception(
+                "Failed to connect to room",
+                extra={
+                    "room_name": ctx.room.name,
+                    "attempt": attempt,
+                    "max_attempts": max_connect_attempts,
+                    "error": str(connect_error),
+                },
+            )
+            if attempt == max_connect_attempts:
+                raise
+            await asyncio.sleep(base_retry_delay_seconds * attempt)
+
+    print("⏳ Waiting for participant...")
+    participant = await ctx.wait_for_participant()
+    print(f"👤 Participant joined: {participant.identity}")
+    logger.info(
+        "Participant joined",
+        extra={"room_name": ctx.room.name, "participant_identity": participant.identity},
+    )
+
+    user_config = None
+    if participant.metadata:
+        try:
+            user_config = json.loads(participant.metadata)
+            logger.info(f"Loaded user config from metadata: {user_config}")
+        except Exception as e:
+            logger.warning(f"Failed to parse participant metadata: {e}")
 
     # Resolve final configuration with multilingual support
     final_config = resolve_final_config(user_config)
@@ -799,9 +851,7 @@ async def entrypoint(ctx: JobContext, user_config: Optional[dict] = None):
         ),
     )
 
-    # Join the room and connect to the user
-    await ctx.connect()
-    logger.info("Connected to room", extra={"room_name": ctx.room.name, "session_id": runtime_session_id})
+    # Connection has already been established before participant wait.
     _publish_phase("listening", intent="connected")
 
     keepalive_task = asyncio.create_task(keepalive_loop())
