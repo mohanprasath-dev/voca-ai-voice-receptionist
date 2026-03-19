@@ -98,9 +98,9 @@ void main() {
   float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
   height = exp(height);
   height = (uv.y * 2.0 - height + 0.2);
-  float intensity = 0.6 * height;
+  float intensity = 1.2 * height;
 
-  float midPoint = 0.20;
+  float midPoint = 0.15;
   float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
 
   vec3 auroraColor = intensity * rampColor;
@@ -136,7 +136,7 @@ export function Aurora(props: AuroraProps) {
 
     const renderer = new Renderer({
       alpha: true,
-      premultipliedAlpha: true,
+      premultipliedAlpha: false,
       antialias: true,
     });
     const gl = renderer.gl;
@@ -178,10 +178,11 @@ export function Aurora(props: AuroraProps) {
 
     const mesh = new Mesh(gl, { geometry, program });
     ctn.appendChild(gl.canvas);
+    gl.canvas.style.position = 'absolute';
+    gl.canvas.style.top = '0';
+    gl.canvas.style.left = '0';
     gl.canvas.style.width = '100%';
     gl.canvas.style.height = '100%';
-    gl.canvas.style.position = 'absolute';
-    gl.canvas.style.inset = '0';
 
     let animateId = 0;
     const update = (t: number) => {

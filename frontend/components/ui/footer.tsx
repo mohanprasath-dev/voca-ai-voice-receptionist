@@ -11,12 +11,10 @@ export const Footer = () => {
         <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
           <div className="col-span-1 md:col-span-4">
             <Link href="/" className="group flex items-center gap-2">
-              <div className="bg-foreground relative size-8 overflow-hidden rounded-lg p-[1px]">
-                <div className="bg-background flex h-full w-full items-center justify-center rounded-[7px]">
-                  <div className="bg-foreground size-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" />
-                </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+                <span className="text-[12px] font-black text-white">V</span>
               </div>
-              <span className="text-xl font-bold tracking-tight">Voca</span>
+              <span className="text-[14px] font-black tracking-[0.2em] text-white">VOCA</span>
             </Link>
             <p className="text-muted-foreground mt-6 max-w-sm leading-relaxed">
               Voca is a next-generation voice AI platform designed for real-time human-AI
@@ -56,7 +54,7 @@ export const Footer = () => {
             <div className="mt-6">
               <p className="text-foreground text-sm font-medium">Mohan Prasath P</p>
               <p className="text-muted-foreground mt-1 text-xs">
-                Senior Frontend Engineer & Product Designer
+                AI Engineer & Builder
               </p>
               <div className="mt-4 flex gap-4">
                 <a

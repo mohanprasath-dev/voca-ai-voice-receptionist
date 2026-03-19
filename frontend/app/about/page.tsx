@@ -4,6 +4,8 @@ import { useRef } from 'react';
 import { motion } from 'motion/react';
 import * as Icons from '@phosphor-icons/react';
 import { Container } from '@/components/ui/container';
+import { Navbar } from '@/components/ui/navbar';
+import { Footer } from '@/components/ui/footer';
 import { SpotlightCard } from '@/components/reactbits/SpotlightCard';
 import { BlurText } from '@/components/reactbits/BlurText';
 import { VariableProximity } from '@/components/reactbits/VariableProximity';
@@ -42,6 +44,7 @@ export default function AboutPage() {
 
   return (
     <div ref={containerRef} className="bg-transparent text-white min-h-screen selection:bg-cyan-500/30 overflow-x-hidden">
+      <Navbar />
       <main>
         <section className="relative z-10 w-full pt-48 pb-20 overflow-hidden">
           {/* Background decoration */}
@@ -112,15 +115,30 @@ export default function AboutPage() {
                       experiences. Built Voca to showcase the future of real-time AI.
                     </p>
                     <div className="flex gap-8">
-                      {['GitHub', 'LinkedIn', 'Website'].map((link) => (
-                        <a
-                          key={link}
-                          href="#"
-                          className="text-xs font-bold tracking-widest uppercase text-white/30 hover:text-white transition-colors"
-                        >
-                          {link}
-                        </a>
-                      ))}
+                      <a
+                        href="https://github.com/mohanprasath-dev"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold tracking-widest uppercase text-white/30 hover:text-white transition-colors"
+                      >
+                        GitHub
+                      </a>
+                      <a
+                        href="https://linkedin.com/in/mohanprasath21"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold tracking-widest uppercase text-white/30 hover:text-white transition-colors"
+                      >
+                        LinkedIn
+                      </a>
+                      <a
+                        href="https://www.mohanprasath.dev"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold tracking-widest uppercase text-white/30 hover:text-white transition-colors"
+                      >
+                        Website
+                      </a>
                     </div>
                   </div>
                 </SpotlightCard>
@@ -185,7 +203,7 @@ export default function AboutPage() {
               </h2>
             </div>
             
-            <div className="relative">
+            <div className="relative flex justify-center py-8">
               <Lanyard
                 name="Mohan Prasath P"
                 role="AI Engineer / Builder"
@@ -215,6 +233,7 @@ export default function AboutPage() {
           </Container>
         </section>
       </main>
+      <Footer />
     </div>
   );
 }

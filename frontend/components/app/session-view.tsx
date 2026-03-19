@@ -74,7 +74,7 @@ export const SessionView = ({ appConfig, onAnimationComplete, ...props }: React.
   return (
     <section
       ref={containerRef}
-      className="ambient-bg noise-overlay relative flex h-[100dvh] w-full flex-col overflow-hidden bg-transparent font-sans selection:bg-cyan-500/30"
+      className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-transparent font-sans selection:bg-cyan-500/30"
       {...props}
     >
       {/* Background Glows */}

@@ -2,6 +2,9 @@
 
 import { Hero } from '@/components/ui/hero';
 import { Navbar } from '@/components/ui/navbar';
+import { Stats } from '@/components/ui/stats';
+import { Features, CTASection } from '@/components/ui/sections';
+import { Footer } from '@/components/ui/footer';
 
 export default function LandingPage() {
   return (
@@ -9,7 +12,11 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <Hero />
+        <Stats />
+        <Features />
+        <CTASection />
       </main>
+      <Footer />
     </div>
   );
 }

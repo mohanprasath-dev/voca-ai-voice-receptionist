@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, useMotionValue, useMotionValueEvent, useSpring, useTransform } from 'motion/react';
+import React, { useCallback, useRef, useState } from 'react';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import * as Icons from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
@@ -61,20 +61,6 @@ export function Lanyard({
     damping: 25,
   });
 
-  // Card drag offset for string sway
-  const cardDragX = useMotionValue(0);
-  const cardDragY = useMotionValue(0);
-  const springDragX = useSpring(cardDragX, { stiffness: 120, damping: 20 });
-  const springDragY = useSpring(cardDragY, { stiffness: 120, damping: 20 });
-
-  useMotionValueEvent(springDragX, 'change', (latest) => {
-    setStringSwing(latest * 0.08);
-  });
-
-  useMotionValueEvent(springDragY, 'change', () => {
-    // Keep listener to preserve spring-based drag feel updates.
-  });
-
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!cardRef.current || isDragging) return;
@@ -94,23 +80,19 @@ export function Lanyard({
     setStringSwing(0);
   }, [mouseX, mouseY]);
 
-  useEffect(() => {
-    if (!isDragging) {
-      cardDragX.set(0);
-      cardDragY.set(0);
-    }
-  }, [isDragging, cardDragX, cardDragY]);
-
   // SVG lanyard string path
-  const stringPath = `M 160 0 C 160 40, ${160 + stringSwing} 80, ${160 + stringSwing * 0.5} 120`;
+  const stringPath = `M 170 0 C 170 40, ${170 + stringSwing} 80, ${170 + stringSwing * 0.5} 95`;
 
   return (
     <div className={cn('flex flex-col items-center select-none', className)}>
-      <div className="relative" style={{ width: 320, height: 130, marginBottom: -10 }}>
+      <div
+        className="relative"
+        style={{ width: '100%', maxWidth: 340, height: 100, marginBottom: -8 }}
+      >
         <svg
-          width="320"
-          height="130"
-          viewBox="0 0 320 130"
+          width="100%"
+          height="100"
+          viewBox="0 0 340 100"
           fill="none"
           style={{ overflow: 'visible' }}
         >
@@ -138,7 +120,7 @@ export function Lanyard({
             strokeLinecap="round"
           />
           <circle
-            cx="160"
+            cx="170"
             cy="6"
             r="5"
             fill="rgba(255,255,255,0.15)"
@@ -146,7 +128,7 @@ export function Lanyard({
             strokeWidth="1"
           />
           <rect
-            x="157"
+            x="167"
             y="0"
             width="6"
             height="7"
@@ -156,8 +138,8 @@ export function Lanyard({
             strokeWidth="0.5"
           />
           <circle
-            cx={160 + stringSwing * 0.5}
-            cy="120"
+            cx={170 + stringSwing * 0.5}
+            cy="95"
             r="4"
             fill="rgba(255,255,255,0.1)"
             stroke="rgba(255,255,255,0.15)"
@@ -171,17 +153,14 @@ export function Lanyard({
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         drag
-        dragConstraints={{ top: -80, bottom: 80, left: -120, right: 120 }}
+        dragConstraints={{ top: -60, bottom: 60, left: -80, right: 80 }}
         dragElastic={0.15}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={() => {
           setIsDragging(false);
-          cardDragX.set(0);
-          cardDragY.set(0);
+          setStringSwing(0);
         }}
         onDrag={(_, info) => {
-          cardDragX.set(info.offset.x * 0.1);
-          cardDragY.set(info.offset.y * 0.1);
           setStringSwing(info.offset.x * 0.08);
         }}
         style={{
@@ -191,7 +170,7 @@ export function Lanyard({
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
         whileHover={{ scale: 1.02 }}
-        className="relative w-[320px]"
+        className="relative w-full max-w-[340px]"
       >
         <div
           className="absolute inset-0 rounded-[2rem]"
