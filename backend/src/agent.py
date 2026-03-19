@@ -30,12 +30,22 @@ from voca.orchestration.context_memory import ContextMemory
 from voca.orchestration.experience_controller import ExperienceController
 from voca.orchestration.session_orchestrator import SessionOrchestrator
 from voca.orchestration.turn_manager import TurnManager
-from voca.prompts.system_prompt import VOCA_SYSTEM_PROMPT
+from voca.prompts.system_prompt import get_dynamic_system_prompt
 from voca.services.budget_manager import BudgetManager
 from voca.services.telemetry import Telemetry
 from voca.services.fallbacks import FallbackService
 from voca.services.humanized_tts import HumanizedTTSStreamer
-from voca.config import DEFAULT_CONFIG
+from voca.services.multilingual_tts import multilingual_tts_service
+from voca.services.enhanced_fallbacks import enhanced_fallback_service
+from voca.config.multilingual_config import (
+    resolve_final_config,
+    get_voice,
+    get_language,
+    get_role,
+    get_company,
+    SUPPORTED_LANGUAGES
+)
+from voca.app_config import DEFAULT_CONFIG
 
 logger = logging.getLogger("agent")
 
@@ -43,10 +53,13 @@ load_dotenv(".env.local")
 
 
 class Assistant(Agent):
-    def __init__(self) -> None:
+    def __init__(self, agent_config: dict = None) -> None:
+        # Use dynamic system prompt based on configuration
+        system_prompt = get_dynamic_system_prompt(agent_config)
         super().__init__(
-            instructions=VOCA_SYSTEM_PROMPT,
+            instructions=system_prompt,
         )
+        self._agent_config = agent_config or {}
 
     # To add tools, use the @function_tool decorator.
     # Here's an example that adds a simple weather tool.
@@ -128,26 +141,23 @@ def _extract_partial_confidence(*args: Any, **kwargs: Any) -> Tuple[bool, Option
     return is_partial, None
 
 
-async def entrypoint(ctx: JobContext):
+async def entrypoint(ctx: JobContext, user_config: dict = None):
     # Logging setup
     # Add any other context you want in all log entries here
     ctx.log_context_fields = {
         "room": ctx.room.name,
     }
 
-    murf_tts = murf.TTS(
-        voice="en-US-matthew",
-        style="Conversational",
-        speed=-8,
-        pitch=0,
-        text_pacing=True,
-    )
+    # Resolve final configuration with multilingual support
+    final_config = resolve_final_config(user_config)
+    
+    # Create initial TTS with resolved configuration
+    murf_tts = multilingual_tts_service.create_tts_instance(final_config)
 
     # Set up a voice AI pipeline using OpenAI, Cartesia, AssemblyAI, and the LiveKit turn detector
     session = AgentSession(
-        # Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
-        # See all available models at https://docs.livekit.io/agents/models/stt/
-        stt=deepgram.STT(model="nova-3"),
+        # Speech-to-text (STT) - starting with English, will handle language detection in transcript events
+        stt=deepgram.STT(model="nova-2"),
         # A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
         # See all available models at https://docs.livekit.io/agents/models/llm/
         llm=google.LLM(
@@ -177,6 +187,10 @@ async def entrypoint(ctx: JobContext):
         budget=budget_manager,
         turn_manager=turn_manager,
     )
+    
+    # Store configuration in session orchestrator
+    if hasattr(session_orchestrator, 'set_agent_config'):
+        session_orchestrator.set_agent_config(final_config)
 
     # Persist orchestration objects on the process for observability and future extensions.
     ctx.proc.userdata["context_memory"] = context_memory
@@ -192,6 +206,10 @@ async def entrypoint(ctx: JobContext):
     keepalive_task: Optional[asyncio.Task[None]] = None
     last_turn_activity_ms = int(time.time() * 1000)
     humanized_tts = HumanizedTTSStreamer(session=session, murf_tts=murf_tts)
+    
+    # Multilingual session state
+    current_config = final_config.copy()
+    detected_language = None
 
     def _publish_data(topic: str, payload: dict[str, Any]) -> None:
         try:
@@ -325,10 +343,12 @@ async def entrypoint(ctx: JobContext):
             "partial": is_partial,
             "partial_confidence": partial_confidence,
             "timestamp_ms": int(time.time() * 1000),
+            "detected_language": getattr(ev, 'detected_language', None),
         }
         logger.info(
             "Transcript received",
             extra={
+                "room_name": ctx.room.name,
                 "session_id": runtime_session_id,
                 "partial": is_partial,
                 "confidence": partial_confidence,
@@ -353,7 +373,7 @@ async def entrypoint(ctx: JobContext):
         _publish_phase("thinking", intent="transcript")
 
         async def _run_turn_pipeline() -> None:
-            nonlocal is_agent_speaking
+            nonlocal is_agent_speaking, current_config, detected_language
             response_started = asyncio.Event()
 
             async def _dead_air_guard() -> None:
@@ -363,7 +383,7 @@ async def entrypoint(ctx: JobContext):
                         timeout=DEFAULT_CONFIG.dead_air_threshold_ms / 1000,
                     )
                 except asyncio.TimeoutError:
-                    filler = fallback_service.next_filler() if fallback_service else "Just a moment..."
+                    filler = enhanced_fallback_service.get_filler_message(get_language(current_config))
                     logger.info(
                         "Dead-air filler emitted",
                         extra={"session_id": runtime_session_id, "threshold_ms": DEFAULT_CONFIG.dead_air_threshold_ms},
@@ -379,7 +399,35 @@ async def entrypoint(ctx: JobContext):
             started = time.perf_counter()
 
             try:
-                logger.info("Orchestrator triggered", extra={"session_id": runtime_session_id})
+                # Extract detected language from transcript event
+                # Deepgram provides language info in ev.language or ev.detected_language
+                event_detected_lang = getattr(ev, 'language', None) or getattr(ev, 'detected_language', None)
+                
+                # Update configuration if language changed and is supported
+                if event_detected_lang and event_detected_lang in SUPPORTED_LANGUAGES:
+                    current_lang = get_language(current_config)
+                    if event_detected_lang != current_lang:
+                        logger.info(f"Language switched from {current_lang} to {event_detected_lang}")
+                        detected_language = event_detected_lang
+                        
+                        # Update configuration
+                        updated_config = resolve_final_config(user_config, event_detected_lang)
+                        current_config = updated_config
+                        
+                        # Update TTS if needed
+                        new_tts = multilingual_tts_service.update_tts_for_language(event_detected_lang, current_config)
+                        if new_tts:
+                            humanized_tts.update_tts(new_tts)
+                            
+                        # Update agent instructions
+                        new_prompt = get_dynamic_system_prompt(current_config)
+                        session.update_instructions(new_prompt)
+                else:
+                    # Log detected language even if not supported
+                    if event_detected_lang:
+                        logger.debug(f"Detected unsupported language: {event_detected_lang}")
+                
+                logger.info("Orchestrator triggered", extra={"room_name": ctx.room.name, "session_id": runtime_session_id, "language": get_language(current_config)})
                 output = await asyncio.to_thread(session_orchestrator.handle_turn, turn_input)
                 elapsed_ms = int((time.perf_counter() - started) * 1000)
                 telemetry.record_response_latency(elapsed_ms)
@@ -393,6 +441,8 @@ async def entrypoint(ctx: JobContext):
                         "intent": output["intent"],
                         "route_action": output["route_action"],
                         "tone": output["tone"],
+                        "language": get_language(current_config),
+                        "voice": get_voice(current_config),
                         "latency_ms": elapsed_ms,
                     },
                 )
@@ -412,23 +462,24 @@ async def entrypoint(ctx: JobContext):
 
                 speech_text = (output.get("speech_text") or "").strip()
                 if not speech_text:
-                    logger.error("No speech_text produced; emitting fallback", extra={"session_id": runtime_session_id})
-                    speech_text = "Just a moment..."
+                    logger.error("No speech_text produced; emitting fallback", extra={"room_name": ctx.room.name, "session_id": runtime_session_id})
+                    speech_text = enhanced_fallback_service.handle_missing_config(get_language(current_config))
 
                 is_agent_speaking = True
                 _publish_phase("speaking", intent=output["intent"])
                 _publish_chat("agent", speech_text)
-                logger.info("TTS started", extra={"session_id": runtime_session_id, "chars": len(speech_text)})
+                logger.info("TTS started", extra={"room_name": ctx.room.name, "session_id": runtime_session_id, "chars": len(speech_text)})
                 await humanized_tts.say(speech_text, allow_interruptions=True)
                 is_agent_speaking = False
                 _publish_phase("listening", intent=output["intent"])
             except Exception as err:
                 response_started.set()
-                logger.exception("Turn pipeline failed", extra={"session_id": runtime_session_id, "error": str(err)})
+                logger.exception("Turn pipeline failed", extra={"room_name": ctx.room.name, "session_id": runtime_session_id, "error": str(err)})
                 _publish_phase("speaking", intent="error")
                 try:
-                    _publish_chat("agent", "Sorry—something went wrong. Please try again.")
-                    await humanized_tts.say("Sorry—something went wrong. Please try again.", allow_interruptions=True)
+                    fallback_msg = enhanced_fallback_service.handle_general_error(get_language(current_config))
+                    _publish_chat("agent", fallback_msg)
+                    await humanized_tts.say(fallback_msg, allow_interruptions=True)
                 except Exception:
                     pass
                 _publish_phase("listening", intent="error")
@@ -454,7 +505,7 @@ async def entrypoint(ctx: JobContext):
             # Only emit keepalive if there has been no activity recently (avoid spamming while talking).
             if now_ms - last_turn_activity_ms < 30_000:
                 continue
-            logger.info("Keepalive prompt", extra={"session_id": runtime_session_id, "prompt": prompt})
+            logger.info("Keepalive prompt", extra={"room_name": ctx.room.name, "session_id": runtime_session_id, "prompt": prompt})
             _publish_phase("speaking", intent="keepalive")
             try:
                 await humanized_tts.say(prompt, allow_interruptions=True)
@@ -472,7 +523,7 @@ async def entrypoint(ctx: JobContext):
 
     # Start the session, which initializes the voice pipeline and warms up the models
     await session.start(
-        agent=Assistant(),
+        agent=Assistant(final_config),
         room=ctx.room,
         room_input_options=RoomInputOptions(
             # For telephony applications, use `BVCTelephony` for best results
@@ -482,7 +533,7 @@ async def entrypoint(ctx: JobContext):
 
     # Join the room and connect to the user
     await ctx.connect()
-    logger.info("Connected to room", extra={"room": ctx.room.name, "session_id": runtime_session_id})
+    logger.info("Connected to room", extra={"room_name": ctx.room.name, "session_id": runtime_session_id})
     _publish_phase("listening", intent="connected")
 
     keepalive_task = asyncio.create_task(keepalive_loop())

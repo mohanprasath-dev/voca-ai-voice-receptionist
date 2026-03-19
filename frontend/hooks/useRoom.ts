@@ -11,7 +11,7 @@ export interface RoomHookState {
   endSession: () => void;
 }
 
-export function useRoom(appConfig: AppConfig): RoomHookState {
+export function useRoom(appConfig: AppConfig, agentConfig?: any): RoomHookState {
   const aborted = useRef(false);
   const room = useMemo(() => new Room(), []);
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -103,6 +103,7 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
                     agents: [{ agent_name: appConfig.agentName }],
                   }
                 : undefined,
+              agentConfig: agentConfig || {}, // Pass agent config to backend
             }),
           });
           return await res.json();
@@ -111,7 +112,7 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
           throw new Error('Error fetching connection details!');
         }
       }),
-    [appConfig]
+    [appConfig, agentConfig]
   );
 
   const startSession = useCallback(() => {
@@ -142,7 +143,7 @@ export function useRoom(appConfig: AppConfig): RoomHookState {
       });
       console.debug('[voca] startSession: mic enable + connect triggered');
     }
-  }, [room, appConfig, tokenSource]);
+  }, [room, appConfig, tokenSource, agentConfig]);
 
   const endSession = useCallback(() => {
     setIsSessionActive(false);

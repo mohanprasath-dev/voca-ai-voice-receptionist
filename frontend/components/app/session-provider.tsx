@@ -4,6 +4,7 @@ import { createContext, useContext, useMemo } from 'react';
 import { RoomContext } from '@livekit/components-react';
 import { APP_CONFIG_DEFAULTS, type AppConfig } from '@/app-config';
 import { useRoom } from '@/hooks/useRoom';
+import { useAgentConfigContext } from '@/components/app/agent-config-provider';
 
 const SessionContext = createContext<{
   appConfig: AppConfig;
@@ -27,6 +28,9 @@ interface SessionProviderProps {
 }
 
 export const SessionProvider = ({ appConfig, children }: SessionProviderProps) => {
+  const { getFinalConfig } = useAgentConfigContext();
+  const agentConfig = getFinalConfig();
+  
   const {
     room,
     isSessionActive,
@@ -34,7 +38,7 @@ export const SessionProvider = ({ appConfig, children }: SessionProviderProps) =
     endSession,
     queuePosition,
     restoredAfterDisconnect,
-  } = useRoom(appConfig);
+  } = useRoom(appConfig, agentConfig);
   const contextValue = useMemo(
     () => ({
       appConfig,

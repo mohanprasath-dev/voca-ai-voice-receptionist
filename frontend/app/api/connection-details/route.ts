@@ -7,6 +7,7 @@ type ConnectionDetails = {
   roomName: string;
   participantName: string;
   participantToken: string;
+  agentConfig?: any; // Pass agent config to backend
 };
 
 // NOTE: you are expected to define the following environment variables in `.env.local`:
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     // Parse agent configuration from request body
     const body = await req.json();
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const agentConfig = body?.agentConfig; // Extract agent config
 
     // Generate participant token
     const participantName = 'user';
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
       roomName,
       participantToken: participantToken,
       participantName,
+      agentConfig, // Include agent config in response
     };
     const headers = new Headers({
       'Cache-Control': 'no-store',

@@ -1,3 +1,6 @@
+from voca.config.multilingual_config import generate_multilingual_system_prompt, DEFAULT_AGENT_CONFIG
+
+# Legacy static prompt for backward compatibility
 VOCA_SYSTEM_PROMPT = """
 You are a real human receptionist having a natural conversation.
 
@@ -17,3 +20,18 @@ Example style:
 Okay - got it.
 Your appointment is confirmed for tomorrow.'
 """.strip()
+
+def get_dynamic_system_prompt(config: dict = None) -> str:
+    """
+    Get dynamic multilingual system prompt based on configuration.
+    
+    Args:
+        config: Agent configuration (uses default if None)
+        
+    Returns:
+        Dynamic system prompt
+    """
+    if config is None:
+        config = DEFAULT_AGENT_CONFIG
+    
+    return generate_multilingual_system_prompt(config)

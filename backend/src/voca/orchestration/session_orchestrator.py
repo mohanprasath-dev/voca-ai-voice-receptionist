@@ -2,7 +2,7 @@ from time import time
 from typing import Optional
 
 from voca.api.contracts import BudgetMode, RouteAction, SessionState, Tone, TurnInput, TurnOutput
-from voca.config import AppConfig, DEFAULT_CONFIG
+from voca.app_config import AppConfig, DEFAULT_CONFIG
 from voca.domain.state_store import InMemorySessionStore
 from voca.orchestration.context_memory import ContextMemory
 from voca.orchestration.experience_controller import ExperienceController

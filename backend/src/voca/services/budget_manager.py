@@ -1,5 +1,5 @@
 from voca.api.contracts import BudgetMode, UsageBudget
-from voca.config import AppConfig, DEFAULT_CONFIG
+from voca.app_config import AppConfig, DEFAULT_CONFIG
 
 
 class BudgetManager:

@@ -75,3 +75,14 @@ class HumanizedTTSStreamer:
         except Exception:
             # Interruption is best-effort; handle may already be completed.
             return
+    
+    def update_tts(self, new_murf_tts: murf.TTS) -> None:
+        """
+        Update the TTS instance for multilingual support.
+        
+        Args:
+            new_murf_tts: New Murf TTS instance
+        """
+        self._murf_tts = new_murf_tts
+        # Reapply conversational style
+        self._murf_tts.update_options(style="Conversational", speed=-8, pitch=0)

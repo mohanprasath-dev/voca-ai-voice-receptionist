@@ -1,6 +1,6 @@
 from typing import Optional
 
-from voca.config import AppConfig, DEFAULT_CONFIG
+from voca.app_config import AppConfig, DEFAULT_CONFIG
 
 EARLY_RESPONSE_MODE = True
 INTERRUPT_PRIORITY = "high"

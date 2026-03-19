@@ -10,6 +10,7 @@ import { InterruptHint } from '@/components/app/interrupt-hint';
 import { LatencyDebugPanel } from '@/components/app/latency-debug-panel';
 import { LiveMetricsPanel } from '@/components/app/live-metrics-panel';
 import { QueuePositionIndicator } from '@/components/app/queue-position-indicator';
+import { AgentConfigPanel } from '@/components/app/agent-config-panel';
 import { useSession } from '@/components/app/session-provider';
 import { TranscriptView } from '@/components/app/transcript-view';
 import { VoiceControlBar } from '@/components/app/voice-control-bar';
@@ -19,6 +20,8 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { useConnectionTimeout } from '@/hooks/useConnectionTimout';
 import { useLiveMetrics } from '@/hooks/useLiveMetrics';
 import { useVoiceSessionState } from '@/hooks/useVoiceSessionState';
+import { useRoom } from '@/hooks/useRoom';
+import { useAgentConfigContext } from '@/components/app/agent-config-provider';
 
 interface SessionViewProps {
   appConfig: AppConfig;
@@ -29,12 +32,16 @@ export const SessionView = ({ ...props }: React.ComponentProps<'section'> & Sess
   useConnectionTimeout(200_000);
 
   const [chatOpen, setChatOpen] = useState(false);
+  const [configPanelOpen, setConfigPanelOpen] = useState(false);
   const messages = useChatMessages();
   const { phase } = useVoiceSessionState();
   const room = useRoomContext();
   const { queuePosition } = useSession();
   const liveMetrics = useLiveMetrics();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Agent configuration hook
+  const { config, updateConfig, getFinalConfig } = useAgentConfigContext();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -123,6 +130,14 @@ export const SessionView = ({ ...props }: React.ComponentProps<'section'> & Sess
         <LiveMetricsPanel metrics={liveMetrics} />
         <LatencyDebugPanel metrics={liveMetrics} />
       </div>
+
+      {/* Agent Configuration Panel */}
+      <AgentConfigPanel
+        config={config}
+        onConfigChange={updateConfig}
+        isOpen={configPanelOpen}
+        onToggle={() => setConfigPanelOpen(!configPanelOpen)}
+      />
     </section>
   );
 };

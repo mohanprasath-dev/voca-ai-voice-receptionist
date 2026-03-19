@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Literal, Optional, TypedDict
+from typing import Dict, List, Literal, Optional, TypedDict, Any
 
 
 class Intent(str, Enum):
@@ -44,6 +44,7 @@ class TurnInput(TypedDict):
     partial: bool
     partial_confidence: Optional[float]
     timestamp_ms: int
+    detected_language: Optional[str]
 
 
 class SlotMap(TypedDict, total=False):
@@ -102,3 +103,7 @@ class SessionState:
         "escalated",
         "ended",
     ] = "idle"
+    # Multilingual support fields
+    user_language: str = "en"
+    last_detected_language: Optional[str] = None
+    agent_config: Dict[str, Any] = field(default_factory=dict)
